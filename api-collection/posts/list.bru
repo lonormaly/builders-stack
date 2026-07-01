@@ -1,0 +1,18 @@
+meta {
+  name: List posts
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/posts
+}
+
+tests {
+  test("responds 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("returns an array", function() {
+    expect(res.getBody()).to.be.an("array");
+  });
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "$comment": "Nx layers ON TOP of bun workspaces + Tilt. Division of labor: Tilt = dev-runtime dashboard (what's running); Nx = task graph, caching, affected, boundaries, generators (build/test/CI). Dev servers stay on ./tilt_up.sh — never routed through Nx. See docs/nx.md.",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json",
+      "!{projectRoot}/.storybook/**/*",
+      "!{projectRoot}/**/*.stories.@(js|jsx|ts|tsx|mdx)"
+    ],
+    "sharedGlobals": ["{workspaceRoot}/tsconfig.base.json", "{workspaceRoot}/eslint.config.mjs"]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"],
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/.next",
+        "{projectRoot}/build",
+        "{projectRoot}/storybook-static"
+      ],
+      "cache": true
+    },
+    "typecheck": {
+      "inputs": ["default", "^default"],
+      "cache": true
+    },
+    "lint": {
+      "inputs": ["default", "{workspaceRoot}/eslint.config.mjs"],
+      "cache": true
+    },
+    "test": {
+      "inputs": ["default", "^production"],
+      "cache": true
+    }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": { "targetName": "lint" }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+/* The design system owns the theme. Import its stylesheet (Tailwind v4 + the CSS-var
+   tokens + shadcn base layer) — single source of truth, no duplication here. */
+@import "@stack/ui/styles.css";
+
+/* Tailwind v4 ignores node_modules, so it won't see the utility classes used *inside*
+   @stack/ui components. Point it at the lib source so bg-primary, rounded-lg, … get
+   generated. (The app's own app/** files are auto-detected.) This is the one
+   monorepo-specific line people miss. */
+@source "../../../libs/ui/src";

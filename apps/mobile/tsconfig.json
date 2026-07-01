@@ -1,0 +1,10 @@
+{
+  "$comment": "Extends the monorepo base (single source of truth). Overrides only what React Native needs: the automatic JSX runtime and react-native's own types.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler"
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}

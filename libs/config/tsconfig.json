@@ -1,0 +1,8 @@
+{
+  "$comment": "Extends the single-source-of-truth base; typed against Bun's process.env.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": ["src"]
+}

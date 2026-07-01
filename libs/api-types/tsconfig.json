@@ -1,0 +1,5 @@
+{
+  "$comment": "Extends the single-source-of-truth base. Pure schemas — no DOM, no JSX.",
+  "extends": "../../tsconfig.base.json",
+  "include": ["src"]
+}

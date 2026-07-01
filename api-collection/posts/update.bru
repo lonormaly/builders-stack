@@ -1,0 +1,27 @@
+meta {
+  name: Update post
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/posts/{{postId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Updated from Bruno",
+    "body": "Edited via the builders-stack API collection."
+  }
+}
+
+tests {
+  test("responds 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("reflects the update", function() {
+    expect(res.getBody().title).to.equal("Updated from Bruno");
+  });
+}

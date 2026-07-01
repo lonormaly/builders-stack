@@ -1,0 +1,88 @@
+// @stack/api — Hono + @hono/zod-openapi.
+//   GET  /health          liveness
+//   GET  /openapi.json     generated OpenAPI 3.1 doc
+//   GET  /docs             Swagger UI (reads /openapi.json)
+//   *    /api/auth/*       Better Auth handler (@stack/auth)
+//   GET  /me               protected — current user (401 if signed out)
+//   CRUD /posts            example resource, zod-validated, backed by @stack/db
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { swaggerUI } from "@hono/swagger-ui";
+import { cors } from "hono/cors";
+import { auth } from "@stack/auth";
+import { getEnv } from "@stack/config";
+import { captureServerException } from "./analytics.js";
+import {
+  listRoute,
+  createPostRoute,
+  getRoute,
+  patchRoute,
+  deleteRoute,
+  repo,
+  toApi,
+} from "./posts.js";
+
+const app = new OpenAPIHono();
+
+// CORS so the web app can call /api/auth + protected routes WITH cookies. The origin
+// comes from the typed env door (@stack/config) — declared once, no inline default here.
+app.use("*", cors({ origin: getEnv().WEB_ORIGIN, credentials: true }));
+
+// --- liveness ---
+app.get("/health", (c) => c.json({ status: "ok", service: "api", uptime: process.uptime() }));
+
+// --- Better Auth: catch-all under /api/auth/* ---
+app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+// --- protected route: proves the auth guard works ---
+app.get("/me", async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) return c.json({ error: "Unauthorized" }, 401);
+  return c.json(session.user);
+});
+
+// --- posts CRUD ---
+app
+  .openapi(listRoute, async (c) => c.json((await repo.list()).map(toApi), 200))
+  .openapi(createPostRoute, async (c) => {
+    const created = await repo.create(c.req.valid("json"));
+    return c.json(toApi(created), 201);
+  })
+  .openapi(getRoute, async (c) => {
+    const post = await repo.get(c.req.valid("param").id);
+    return post ? c.json(toApi(post), 200) : c.json({ error: "Not found" }, 404);
+  })
+  .openapi(patchRoute, async (c) => {
+    const updated = await repo.update(c.req.valid("param").id, c.req.valid("json"));
+    return updated ? c.json(toApi(updated), 200) : c.json({ error: "Not found" }, 404);
+  })
+  .openapi(deleteRoute, async (c) => {
+    const ok = await repo.remove(c.req.valid("param").id);
+    return ok ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
+  });
+
+// --- OpenAPI doc + Swagger UI ---
+app.doc("/openapi.json", {
+  openapi: "3.1.0",
+  info: { version: "1.0.0", title: "@stack/api", description: "Builders-stack reference API." },
+});
+app.get("/docs", swaggerUI({ url: "/openapi.json" }));
+
+// --- error tracking: ship uncaught route errors to PostHog (no-op without a key) ---
+app.onError((err, c) => {
+  captureServerException(err);
+  console.error("[api] unhandled error", err);
+  return c.json({ error: "Internal Server Error" }, 500);
+});
+
+// PORT is injected by portless in local dev (stable URL: api.stack.localhost:1355);
+// falls back to 3001 for standalone `bun --filter @stack/api dev`.
+const port = Number(process.env.PORT) || 3001;
+console.log(`[api] listening on http://localhost:${port}  (docs: /docs)`);
+
+export default { port, fetch: app.fetch };
+
+// The full app type — the second way to stay in sync with the frontend. @stack/api-types
+// gives shared zod types for plain fetch; this gives a fully-typed Hono RPC client:
+// `hc<AppType>(API_URL)` in apps/web has every route + its params/response typed end to
+// end, no codegen. See docs/nx.md (Contracts).
+export type AppType = typeof app;

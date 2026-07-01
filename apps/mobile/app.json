@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Stack Mobile",
+    "slug": "stack-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true },
+    "android": {},
+    "web": { "bundler": "metro" }
+  }
+}

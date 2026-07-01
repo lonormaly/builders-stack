@@ -1,0 +1,18 @@
+meta {
+  name: OpenAPI Spec
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/openapi.json
+}
+
+tests {
+  test("responds 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("is an OpenAPI 3 document", function() {
+    expect(res.getBody().openapi).to.match(/^3\./);
+  });
+}

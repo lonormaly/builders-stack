@@ -1,0 +1,9 @@
+{
+  "$comment": "jsx enabled because @stack/auth -> @stack/email pulls React Email .tsx into this project's type graph (the API itself authors no JSX).",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "jsx": "react-jsx"
+  },
+  "include": ["src"]
+}

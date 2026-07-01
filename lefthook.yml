@@ -1,0 +1,29 @@
+# Git hooks — the commit-boundary version of the boundary thesis. The two laws are
+# enforced in `lint` (Nx) and in review; this stops drift one step earlier: an agent
+# (or human) literally can't COMMIT unformatted / unlinted code, and can't PUSH code
+# that doesn't typecheck. Fast by construction — staged files only on commit, the
+# Nx-affected graph only on push.
+#
+# Enable once after `bun install`:  bunx lefthook install
+# Skip in a pinch:                  LEFTHOOK=0 git commit …   (or `git commit --no-verify`)
+
+pre-commit:
+  parallel: true
+  commands:
+    # Oxfmt (Rust) formats just the staged files and re-stages what it fixed.
+    format:
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
+      run: bunx oxfmt {staged_files}
+      stage_fixed: true
+    # Oxlint (Rust, type-aware) over the staged files only — sub-second.
+    lint:
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
+      run: bunx oxlint {staged_files}
+
+pre-push:
+  commands:
+    # Typecheck only the projects the push affects (Nx graph + cache).
+    # Guard: skip on the very FIRST push (no upstream ref to diff against yet) so a
+    # fresh repo or clone never hangs typechecking all projects cold. CI still runs it.
+    typecheck:
+      run: git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1 && bunx nx affected -t typecheck || echo "→ no upstream yet — skipping pre-push typecheck (CI runs it)"

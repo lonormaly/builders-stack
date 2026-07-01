@@ -1,0 +1,34 @@
+{
+  "$comment": "Shared TS config. Every app/service/lib has its own tsconfig that extends this one — single source of truth (no config drift). The `paths` block below is what gives @nx/enforce-module-boundaries its teeth: without it Nx can't resolve @stack/* (apps & services have no `exports`/`main`) and silently SKIPS the tag depConstraints. Values MUST start with `./` (relative to this file) — bare `libs/...` triggers TS5090 since there's no baseUrl. App/service targets need not exist on disk; the boundary rule maps them to a project by root. Apps override `paths` in their own tsconfig, so this doesn't perturb their symlink/exports runtime resolution.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "paths": {
+      "@stack/ai": ["./libs/ai/src/index.ts"],
+      "@stack/analytics": ["./libs/analytics/src/index.ts"],
+      "@stack/analytics/events": ["./libs/analytics/src/events.ts"],
+      "@stack/api-types": ["./libs/api-types/src/index.ts"],
+      "@stack/auth": ["./libs/auth/src/index.ts"],
+      "@stack/config": ["./libs/config/src/index.ts"],
+      "@stack/db": ["./libs/db/src/index.ts"],
+      "@stack/email": ["./libs/email/src/index.ts"],
+      "@stack/ui": ["./libs/ui/src/index.ts"],
+      "@stack/ui/tokens": ["./libs/ui/src/tokens/index.ts"],
+      "@stack/api": ["./services/api/src/index.ts"],
+      "@stack/ai-worker": ["./services/ai-worker/src/index.ts"],
+      "@stack/payment": ["./services/payment/src/index.ts"],
+      "@stack/web": ["./apps/web/index.ts"],
+      "@stack/landing": ["./apps/landing/index.ts"],
+      "@stack/mobile": ["./apps/mobile/index.ts"]
+    }
+  }
+}

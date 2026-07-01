@@ -1,0 +1,32 @@
+{
+  "name": "@stack/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Analytics: one <Analytics/> client provider (PostHog + Microsoft Clarity) + a typed, isomorphic event catalog (./events) shared by client and server.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./events": "./src/events.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@microsoft/clarity": "^1.0.2",
+    "posthog-js": "^1.396.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ]
+  }
+}

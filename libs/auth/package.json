@@ -1,0 +1,30 @@
+{
+  "name": "@stack/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "auth:generate": "bunx @better-auth/cli generate --config src/auth.ts --output ../db/src/auth-schema.ts"
+  },
+  "dependencies": {
+    "@stack/analytics": "workspace:*",
+    "@stack/db": "workspace:*",
+    "@stack/email": "workspace:*",
+    "better-auth": "^1.6.23",
+    "posthog-node": "^5.39.2"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.4.21",
+    "@types/bun": "^1.3.14",
+    "@types/react": "^19.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ]
+  }
+}

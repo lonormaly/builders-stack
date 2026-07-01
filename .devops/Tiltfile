@@ -1,0 +1,168 @@
+# builders-stack — local dev via Tilt + Vercel Portless.
+#
+# Every SERVED role (has a URL) is wrapped with portless so it gets a stable,
+# named URL instead of a pinned port: <service>.stack.localhost:1355.
+# Portless injects a random PORT and proxies the named URL → that port, so
+# NOTHING here pins a service port. Every served role reads process.env.PORT.
+#
+# The map: apps/ = public UI · services/ = has a URL · libs/ = shared, never
+# served (so no Tilt resource — except the design system's Storybook, which IS
+# served for humans).
+#
+# See docs/portless.md for the convention and the full URL table.
+
+os.putenv('PATH', os.environ['HOME'] + '/.bun/bin:' + os.environ.get('PATH', ''))
+
+# Direct bun binary — bypasses the proto shim (~/.proto/shims/bun) that rewrites
+# `bun run X` to `moon run :X`, which breaks bare targets inside local_resource.
+BUN = os.environ['HOME'] + '/.bun/bin/bun'
+
+update_settings(max_parallel_updates=4)
+docker_prune_settings(disable=True)
+
+# Repo root (this Tiltfile lives in .devops/, loaded via load_dynamic from root).
+REPO_ROOT = str(local('cd .. && pwd', quiet=True)).strip()
+
+print('=' * 60)
+print('BUILDERS-STACK TILT - LOCAL (portless)')
+print('=' * 60)
+
+# All served roles share this scheme. <service>.stack.localhost:1355
+PORTLESS_PROXY = 'http://{}.stack.localhost:1355'
+
+# Sourced into each service so DATABASE_URL / secrets from .env.local reach the
+# process. Cross-service URLs are injected AFTER this (via portless_cmd env=), so
+# they win over any stale values in .env.local.
+ENV_LOCAL = 'set -a && [ -f ' + REPO_ROOT + '/.env.local ] && . ' + REPO_ROOT + '/.env.local; set +a; '
+
+# Portless wrapper: retry route registration with backoff to survive cross-project
+# lock contention (portless has a ~1s internal lock budget; another project
+# registering at the same moment can exceed it). Pass health_url to add a watchdog
+# that kills the process group if the URL stops responding, so Tilt restarts it
+# (fixes: portless stays alive while bun --watch silently loops on a crashed server).
+def portless_cmd(args, env='', health_url=''):
+    cmd = (env + ' ' if env else '') + 'portless --force ' + args
+    retry = 'for i in 1 2 3 4 5; do ' + cmd + ' && break || echo "portless lock failed (attempt $i/5), retrying in ${i}s..." && sleep $i; done'
+    if not health_url:
+        return retry
+    watchdog = '(sleep 20; FAILS=0; while true; do sleep 10; ' + 'if curl -sf -o /dev/null ' + health_url + ' 2>/dev/null; then FAILS=0; ' + 'else FAILS=$((FAILS+1)); echo "[watchdog] health check failed ($FAILS/3) for ' + health_url + '"; ' + 'if [ $FAILS -ge 3 ]; then echo "[watchdog] killing process group after 3 failed checks"; kill 0; exit 1; fi; ' + 'fi; done) &'
+    # Wrap in { } so the backgrounded watchdog (&) doesn't break the parent shell.
+    return '{ ' + watchdog + ' ' + retry + '; }'
+
+# =============================================================================
+# Services (served — have a URL, wrapped with portless)
+# =============================================================================
+
+# api — Hono + OpenAPI. Better Auth lives at /api/auth/*. CORS + Better Auth
+# trusted origins point at the portless web URL; BETTER_AUTH_URL is its own.
+local_resource(
+    'api',
+    serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
+        'api.stack ' + BUN + ' --filter @stack/api dev',
+        env='WEB_ORIGIN=' + PORTLESS_PROXY.format('web') +
+            ' BETTER_AUTH_URL=' + PORTLESS_PROXY.format('api') +
+            ' BETTER_AUTH_TRUSTED_ORIGINS=' + PORTLESS_PROXY.format('web'),
+        health_url=PORTLESS_PROXY.format('api') + '/health'),
+    links=[PORTLESS_PROXY.format('api') + '/health', PORTLESS_PROXY.format('api') + '/docs'],
+    labels=['services'],
+)
+
+# payment — Creem checkout + webhooks (Hono). Boots on the Mock provider until
+# CREEM_API_KEY is set. Point Creem webhooks at this URL via the `tunnel` button.
+local_resource(
+    'payment',
+    serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
+        'payment.stack ' + BUN + ' --filter @stack/payment dev',
+        health_url=PORTLESS_PROXY.format('payment') + '/health'),
+    links=[PORTLESS_PROXY.format('payment') + '/health'],
+    labels=['services'],
+)
+
+# ai-worker — background load, NO URL → plain local_resource (no portless).
+local_resource(
+    'ai-worker',
+    serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + BUN + ' --filter @stack/ai-worker dev',
+    labels=['services'],
+)
+
+# =============================================================================
+# Apps (served to humans, wrapped with portless)
+# =============================================================================
+
+# web — Next.js. portless sets PORT; `next dev` (no --port) binds it. Both web
+# and api sit under .stack.localhost so the cross-subdomain auth cookie is shared.
+local_resource(
+    'web',
+    serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
+        'web.stack ' + BUN + ' --filter @stack/web dev',
+        env='NEXT_PUBLIC_API_URL=' + PORTLESS_PROXY.format('api') +
+            ' API_URL=' + PORTLESS_PROXY.format('api'),
+        health_url=PORTLESS_PROXY.format('web')),
+    links=[PORTLESS_PROXY.format('web')],
+    labels=['apps'],
+)
+
+# landing — public marketing Next.js app. Same portless pattern as web; NEXT_PUBLIC_APP_URL
+# points "Log in / Get started" at the web app. Public — no auth, no session redirects.
+local_resource(
+    'landing',
+    serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
+        'landing.stack ' + BUN + ' --filter @stack/landing dev',
+        env='NEXT_PUBLIC_APP_URL=' + PORTLESS_PROXY.format('web'),
+        health_url=PORTLESS_PROXY.format('landing')),
+    links=[PORTLESS_PROXY.format('landing')],
+    labels=['apps'],
+)
+
+# =============================================================================
+# Design system (served — Storybook)
+# =============================================================================
+# @stack/ui's storybook script binds `-p ${PORT:-...}`, so portless's injected
+# PORT is what it binds and proxies to. It falls back to a default standalone.
+local_resource(
+    'storybook',
+    serve_cmd='cd ' + REPO_ROOT + ' && ' + portless_cmd('storybook.stack ' + BUN + ' --filter @stack/ui storybook'),
+    links=[PORTLESS_PROXY.format('storybook')],
+    labels=['design-system'],
+)
+
+# =============================================================================
+# One-off flows (click-to-run buttons in the Tilt UI; auto_init=False = don't
+# run on boot)
+# =============================================================================
+local_resource(
+    'db:push',
+    cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + BUN + ' --filter @stack/db push',
+    auto_init=False,
+    labels=['flows'],
+)
+local_resource(
+    'deploy:staging',
+    cmd='cd ' + REPO_ROOT + ' && ./scripts/deploy.sh staging',
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    labels=['flows'],
+)
+local_resource(
+    'tunnel',
+    cmd='cd ' + REPO_ROOT + ' && ./scripts/tunnel.sh',
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    labels=['flows'],
+)
+
+print("""
+================================================================================
+                   BUILDERS-STACK LOCAL DEVELOPMENT (Portless)
+================================================================================
+  Web:       http://web.stack.localhost:1355
+  Landing:   http://landing.stack.localhost:1355
+  API:       http://api.stack.localhost:1355        (/health · /docs)
+  Payment:   http://payment.stack.localhost:1355    (/health)
+  Storybook: http://storybook.stack.localhost:1355
+  AI Worker: background load — no URL
+
+  Flows (click in the Tilt UI): db:push · deploy:staging · tunnel
+  Portless proxy: install with `npm install -g portless` (starts automatically).
+================================================================================
+""")

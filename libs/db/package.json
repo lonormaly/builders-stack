@@ -1,0 +1,29 @@
+{
+  "name": "@stack/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "push": "drizzle-kit push",
+    "migrate": "bun run src/migrate.ts",
+    "seed": "bun run src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "drizzle-kit": "^0.31.10"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ]
+  }
+}

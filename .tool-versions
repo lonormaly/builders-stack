@@ -1,0 +1,6 @@
+# Toolchain pins (asdf / mise read this). Bun matches `packageManager` in package.json
+# and the CI setup-bun version — one source of truth for "which runtime built this".
+# Node is not required to RUN the app (Bun is the runtime) but is the floor for the
+# npx-based MCP servers in agents/mcp.json. See docs/getting-started.md.
+bun 1.1.34
+nodejs 20.11.1

@@ -1,0 +1,76 @@
+# Local backing services: Postgres (for @stack/db) + Redis (for @stack/ai-worker's queue).
+# Bring them up before ./tilt_up.sh, or run the whole app in containers with `--profile app`.
+#   docker compose -f infra/docker-compose.yml up -d          # just the datastores
+#   docker compose -f infra/docker-compose.yml --profile app up --build   # + the services
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: builders_stack
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- optional: run the services in containers too (opt in with `--profile app`) ---
+  api:
+    profiles: ["app"]
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/builders_stack
+      API_PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment:
+    profiles: ["app"]
+    build:
+      context: ..
+      dockerfile: infra/payment.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/builders_stack
+      CREEM_API_KEY: ${CREEM_API_KEY:-}
+      CREEM_WEBHOOK_SECRET: ${CREEM_WEBHOOK_SECRET:-}
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-worker:
+    profiles: ["app"]
+    build:
+      context: ..
+      dockerfile: infra/ai-worker.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/builders_stack
+      REDIS_URL: redis://redis:6379
+      AI_API_KEY: ${AI_API_KEY:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:

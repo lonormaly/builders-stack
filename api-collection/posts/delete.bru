@@ -1,0 +1,15 @@
+meta {
+  name: Delete post
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/posts/{{postId}}
+}
+
+tests {
+  test("responds 204", function() {
+    expect(res.status).to.equal(204);
+  });
+}

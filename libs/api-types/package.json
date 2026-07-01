@@ -1,0 +1,22 @@
+{
+  "name": "@stack/api-types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The API contract: Zod request/response schemas + inferred types, shared by services/api (validate + OpenAPI) and apps/web (type-safe calls). The one place the shape of the API lives.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^0.19.0",
+    "zod": "^3.23.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$comment": "Extends the single-source-of-truth base; jsx enabled for the <Analytics/> client component (mirrors libs/ui).",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["bun", "react"]
+  },
+  "include": ["src"]
+}

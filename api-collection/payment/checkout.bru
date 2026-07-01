@@ -1,0 +1,29 @@
+meta {
+  name: Create checkout
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{paymentUrl}}/checkout
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "priceId": "price_demo",
+    "customerEmail": "buyer@example.com",
+    "successUrl": "http://localhost:3000/thanks",
+    "cancelUrl": "http://localhost:3000/pricing"
+  }
+}
+
+tests {
+  test("responds 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("returns a checkout url", function() {
+    expect(res.getBody().checkoutUrl).to.be.a("string");
+  });
+}

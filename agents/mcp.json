@@ -1,0 +1,25 @@
+{
+  "_comment": "Ready-to-use MCP servers for this repo. Copy to `.mcp.json` at the repo root (Claude Code auto-loads it; Cursor/Codex use the same shape). Claude Code expands ${VAR} from your environment — set DATABASE_URL and CONTEXT7_API_KEY in your shell or .env.local. context7 gives your agent up-to-date library docs; postgres (crystaldba/postgres-mcp Pro in read-only `restricted` mode — needs `uv`; replaces the archived, SQL-injectable @modelcontextprotocol/server-postgres) reads the live schema/data via DATABASE_URL; filesystem scopes file access to this repo; mobbin gives your agent 600k+ real app UI screens as design reference (search shipped patterns before building UI) — OAuth on first connect (browser), requires a paid Mobbin plan. See docs/design.md.",
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp", "--api-key", "${CONTEXT7_API_KEY}"]
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["postgres-mcp", "--access-mode=restricted"],
+      "env": { "DATABASE_URI": "${DATABASE_URL}" }
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PWD}"]
+    },
+    "mobbin": {
+      "type": "http",
+      "url": "https://api.mobbin.com/mcp"
+    }
+  }
+}

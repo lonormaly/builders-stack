@@ -1,0 +1,18 @@
+meta {
+  name: Health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/health
+}
+
+tests {
+  test("responds 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("reports ok", function() {
+    expect(res.getBody().ok).to.equal(true);
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Create post
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/posts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Hello from Bruno",
+    "body": "Created via the builders-stack API collection."
+  }
+}
+
+tests {
+  test("responds 201", function() {
+    expect(res.status).to.equal(201);
+  });
+}
+
+script:post-response {
+  // Capture the new id so get/update/delete can reuse it in one run.
+  bru.setVar("postId", res.body.id);
+}
