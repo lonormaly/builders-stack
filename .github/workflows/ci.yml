@@ -11,7 +11,7 @@ jobs:
   affected:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # nx affected needs history to diff against the base branch.
           fetch-depth: 0
@@ -37,7 +37,7 @@ jobs:
       # Derives NX_BASE / NX_HEAD: on a PR, base = merge-base with the target
       # branch; on a push to main, base = the last successful commit.
       - name: Derive affected SHAs
-        uses: nrwl/nx-set-shas@v4
+        uses: nrwl/nx-set-shas@v5
 
       # ESLint boundary enforcement (@nx/enforce-module-boundaries) + typecheck + test + build.
       - name: Boundaries · typecheck · test · build (affected only)
