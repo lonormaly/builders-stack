@@ -15,7 +15,7 @@ This is a bun-workspace monorepo. Read this before writing code; it tells you wh
 - **By feature, not by layer** inside each app/service (`billing/`, not `controllers/`).
 - Every workspace extends the root `tsconfig.base.json`. Don't fork compiler options.
 - ORM is **Drizzle** (`libs/db`). One ORM only.
-- Payments go through the `@stack/payment` adapter interface — never call Creem directly from an app.
+- Payments go through the `@stack/payment` adapter interface — never call a vendor (Creem/Dodo/…) directly from an app. Swapping or adding a provider is a one-file change in `services/payment/src/provider.ts`; recipe in `docs/payments.md`.
 
 ## How to run
 
