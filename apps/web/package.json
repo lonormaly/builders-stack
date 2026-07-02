@@ -12,6 +12,7 @@
   "dependencies": {
     "@stack/analytics": "workspace:*",
     "@stack/api-types": "workspace:*",
+    "@stack/seo": "workspace:*",
     "@stack/ui": "workspace:*",
     "better-auth": "^1.6.23",
     "next": "^15.1.6",

@@ -61,6 +61,26 @@ These are load-bearing. Nx turns the two headline laws into **lint errors** (eve
 5. **Payments through the adapter.** Never call Creem (or any provider) directly from an app or the API — go through `@stack/payment`. Swapping providers should touch one file, not fifty.
 6. **Config, not hardcoding.** No hardcoded URLs, ports, or secrets. Read typed env through `@stack/config`'s `getEnv()` (backed by `.env.local`, see `.env.example`). Portless injects ports — nothing is pinned.
 7. **One tsconfig source of truth.** Every workspace's `tsconfig.json` extends the root `tsconfig.base.json`. Don't fork compiler options per package.
+8. **SEO/GEO through `@stack/seo` — enforced.** Every public page must export `metadata`/`generateMetadata` via `@stack/seo`'s `pageMetadata()`, and public content must be server-rendered. `bun run check:seo` (in `bun run check`, lefthook pre-push, and CI) **fails the build** otherwise. Never hand-roll `Metadata`/OG/canonical or inline JSON-LD — see § 3.1 below.
+
+### 3.1 SEO/GEO — the laws (enforced)
+
+**`@stack/seo` is the one door** for page metadata + JSON-LD. `bun run check:seo` gates it, so a public page that drifts can't merge. Source of truth: Google's guide — read it — <https://developers.google.com/search/docs/fundamentals/ai-optimization-guide>.
+
+**DO**
+
+- **Public content is server-rendered + crawlable** — never block JS/DOM/accessibility. A public page must not be a root `"use client"` component (push interactivity into a child component).
+- Every public page uses **`pageMetadata()`** (title/description/canonical/OG/twitter, from `@stack/config`).
+- Content pages emit JSON-LD via `@stack/seo` (`organizationJsonLd`, `websiteJsonLd`, `articleJsonLd`, `faqJsonLd`, `breadcrumbJsonLd` + `<JsonLd/>`) — for **rich results**, since structured data is optional for AI but valuable in classic Search.
+- Semantic HTML; keep `sitemap.ts` current; spread `aiCrawlerRules()` into `robots.ts`.
+
+**DON'T**
+
+- Don't **chunk** content for AI, write in **"AI syntax"**, or mass-produce **recycled/scaled** content — the win is original, first-hand, expert content on crawlable pages.
+- Don't treat **`llms.txt`** as a ranking lever — **Google Search ignores it** (kept only for non-Google engines).
+- Don't hand-roll `Metadata`/OpenGraph/canonical or inline `<script type="application/ld+json">`.
+
+**Private-route convention (exempt):** a route is private if any path segment (route-group parens stripped) is `app`, `dashboard`, `protected`, `auth`, or `internal`.
 
 ## 4. How to run — Tilt (dev servers) + Nx (tasks)
 

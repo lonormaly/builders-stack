@@ -34,6 +34,11 @@ jobs:
       - name: Format check (oxfmt)
         run: bunx oxfmt --check .
 
+      # SEO/GEO drift gate — every public page must export metadata + be server-rendered,
+      # every app with public pages must ship robots.ts + sitemap.ts. Whole-repo, fast.
+      - name: SEO/GEO check (check:seo)
+        run: bun run check:seo
+
       # Derives NX_BASE / NX_HEAD: on a PR, base = merge-base with the target
       # branch; on a push to main, base = the last successful commit.
       - name: Derive affected SHAs

@@ -7,6 +7,16 @@ import {
   CardTitle,
   CardDescription,
 } from "@stack/ui";
+import { pageMetadata } from "@stack/seo";
+
+// This page's canonical metadata — one door (@stack/seo). The layout sets the site
+// default + `%s` template; this pins the "/" canonical + OG for the home route.
+export const metadata = pageMetadata({
+  description:
+    "A real project structure your coding agent can navigate — apps · services · libs, a live app, a shared design system, and enforced module boundaries.",
+  tagline: "an AI-native monorepo starter",
+  path: "/",
+});
 
 // Where "Log in / Get started" sends people: the app (apps/web). Configurable — never
 // hardcode the origin. Cross-app link, so a plain anchor (not next/link).

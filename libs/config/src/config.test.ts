@@ -8,6 +8,8 @@ test("EnvSchema accepts an empty env and applies safe defaults (boots keyless)",
   expect(env.WEB_ORIGIN).toBe("http://localhost:3000");
   expect(env.POSTHOG_HOST).toBe("https://us.i.posthog.com");
   expect(env.POSTHOG_API_KEY).toBeUndefined();
+  expect(env.SITE_NAME).toBe("Builder's Stack");
+  expect(env.NEXT_PUBLIC_SITE_URL).toBe("http://localhost:3000");
 });
 
 test("EnvSchema accepts valid overrides", () => {

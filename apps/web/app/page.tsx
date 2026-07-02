@@ -10,7 +10,17 @@ import {
   Label,
   tokens,
 } from "@stack/ui";
+import { pageMetadata } from "@stack/seo";
 import { SessionCard } from "./auth/SessionCard";
+
+// This route's canonical metadata — one door (@stack/seo). Layout owns the site
+// default + `%s` template; this pins the "/" canonical + OG for the home route.
+export const metadata = pageMetadata({
+  title: "Design system",
+  description:
+    "One design system, every surface — @stack/ui components and shared tokens rendered by both web and native, wired to a live Better Auth login.",
+  path: "/",
+});
 
 // Proves the JS token layer is shared: these swatches are driven by @stack/ui's `tokens`
 // object — the exact same values React Native consumes (see apps/mobile).

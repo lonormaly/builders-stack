@@ -27,3 +27,8 @@ pre-push:
     # fresh repo or clone never hangs typechecking all projects cold. CI still runs it.
     typecheck:
       run: git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1 && bunx nx affected -t typecheck || echo "→ no upstream yet — skipping pre-push typecheck (CI runs it)"
+    # SEO/GEO drift gate — fails the push if a public page lacks metadata or is
+    # client-rendered, or an app is missing robots.ts/sitemap.ts. Fast (regex over
+    # apps/*/app), no Nx graph needed. Same check runs in `bun run check` + CI.
+    check-seo:
+      run: bun scripts/check-seo.ts

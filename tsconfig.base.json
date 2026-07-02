@@ -21,6 +21,7 @@
       "@stack/config": ["./libs/config/src/index.ts"],
       "@stack/db": ["./libs/db/src/index.ts"],
       "@stack/email": ["./libs/email/src/index.ts"],
+      "@stack/seo": ["./libs/seo/src/index.ts"],
       "@stack/ui": ["./libs/ui/src/index.ts"],
       "@stack/ui/tokens": ["./libs/ui/src/tokens/index.ts"],
       "@stack/api": ["./services/api/src/index.ts"],

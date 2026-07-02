@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "echo 'Run ./tilt_up.sh (not tilt up) — Tilt owns dev servers, not Nx. See docs/nx.md for the Tilt-vs-Nx split.'",
     "graph": "nx graph",
-    "check": "nx run-many -t typecheck lint test",
+    "check": "nx run-many -t typecheck lint test && bun run check:seo",
+    "check:seo": "bun scripts/check-seo.ts",
     "typecheck": "nx run-many -t typecheck",
     "lint": "oxlint",
     "lint:boundaries": "bunx nx run-many -t lint",

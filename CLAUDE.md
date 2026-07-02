@@ -39,4 +39,25 @@ This is a bun-workspace monorepo. Read this before writing code; it tells you wh
 - **Push, don't poll:** for job/status state use WebSocket/SSE, not a `setInterval` hitting an endpoint. An idle client makes zero requests.
 - **Sacred content:** never delete the instructional comments in `agents/`, skills, or configs — restructure/add, don't strip. They're hard-won.
 
+## SEO/GEO — enforced
+
+**This is enforced.** `bun run check:seo` (in `bun run check`, lefthook pre-push, and CI) **fails the build** if a public page lacks metadata or is client-rendered. **`@stack/seo` is the one door for page metadata + JSON-LD — use it, don't hand-roll.**
+
+Grounded in Google's guide — read it, it's the source of truth: <https://developers.google.com/search/docs/fundamentals/ai-optimization-guide>.
+
+**DO**
+
+- Public content is **server-rendered + crawlable** — never block JS/DOM/accessibility. (A public page must not be a root `"use client"` component; push interactivity into a child.)
+- Every public page exports `metadata`/`generateMetadata` via `@stack/seo`'s **`pageMetadata()`** (title/description/canonical/OG/twitter, sourced from `@stack/config`).
+- Content pages emit JSON-LD via `@stack/seo` (`organizationJsonLd`, `websiteJsonLd`, `articleJsonLd`, `faqJsonLd`, `breadcrumbJsonLd` + `<JsonLd/>`) — for **rich results**, not as an AI hack.
+- Use semantic HTML; keep `sitemap.ts` current; spread `aiCrawlerRules()` into `robots.ts`.
+
+**DON'T**
+
+- Don't "chunk" content for AI, write in "AI syntax", or mass-produce recycled/scaled content (Google's scaled-content abuse policy). The real win is **original, first-hand, expert content**.
+- Don't treat `llms.txt` as a ranking lever — **Google Search ignores it** (kept only for non-Google engines).
+- Don't hand-roll `Metadata`/OpenGraph/canonical or inline `<script type="application/ld+json">` — that's exactly what the gate exists to stop.
+
+**Private-route convention (exempt from the rules):** a route is private if any path segment (route-group parens stripped) is `app`, `dashboard`, `protected`, `auth`, or `internal`.
+
 See `agents/` for skills, subagents, and MCP config.

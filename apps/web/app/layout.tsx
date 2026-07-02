@@ -2,33 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { Analytics } from "@stack/analytics";
-import { SITE_URL } from "./seo";
+import { pageMetadata } from "@stack/seo";
 
 const DESCRIPTION =
   "The flagship app in Builder's Stack — one shared design system (@stack/ui), a Hono API, and Better Auth login, all wired end to end.";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Builder's Stack — Web",
-    template: "%s — Builder's Stack",
-  },
+// One door — pageMetadata() fills metadataBase, canonical, OG, twitter, and the
+// `%s — Builder's Stack` title template from @stack/config. No hand-rolled OG.
+export const metadata: Metadata = pageMetadata({
   description: DESCRIPTION,
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    url: SITE_URL,
-    siteName: "Builder's Stack",
-    title: "Builder's Stack — Web",
-    description: DESCRIPTION,
-    // og:image from app/opengraph-image.tsx automatically.
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Builder's Stack — Web",
-    description: DESCRIPTION,
-  },
-};
+  tagline: "Web",
+});
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

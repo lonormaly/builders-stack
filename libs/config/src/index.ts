@@ -17,6 +17,12 @@ export const EnvSchema = z.object({
   // Origin the browser app runs on — used by the API for CORS. Never hardcode it.
   WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
 
+  // Public site identity — the single source @stack/seo's pageMetadata() reads for
+  // canonical/OG. NEXT_PUBLIC_ so it's inlined for the browser too; never hardcode a
+  // production domain in a page.
+  SITE_NAME: z.string().default("Builder's Stack"),
+  NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
+
   // Server-side PostHog (optional — absent = analytics no-op, see @stack/analytics).
   POSTHOG_API_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().url().default("https://us.i.posthog.com"),
@@ -31,4 +37,10 @@ let cached: Env | undefined;
 export function getEnv(): Env {
   if (!cached) cached = EnvSchema.parse(process.env);
   return cached;
+}
+
+// The site identity door for @stack/seo — name + canonical origin from one place.
+export function siteConfig(): { name: string; url: string } {
+  const e = getEnv();
+  return { name: e.SITE_NAME, url: e.NEXT_PUBLIC_SITE_URL };
 }

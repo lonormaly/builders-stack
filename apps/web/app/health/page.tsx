@@ -1,4 +1,5 @@
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@stack/ui";
+import { pageMetadata } from "@stack/seo";
 // The API contract, shared with services/api. `Post` is inferred from the SAME zod
 // schema the server validates against — so this fetch is type-safe with zero drift.
 // (`import type` erases at build: the browser never pulls zod/@stack/api-types.)
@@ -10,6 +11,9 @@ const API_URL = process.env.API_URL ?? "http://localhost:3001";
 
 // Don't try to reach the API during `next build` — resolve it per request instead.
 export const dynamic = "force-dynamic";
+
+// A diagnostics page — server-rendered, but keep it out of the index (noIndex).
+export const metadata = pageMetadata({ title: "API health", path: "/health", noIndex: true });
 
 type HealthResult =
   | { reachable: true; status: number; body: unknown }

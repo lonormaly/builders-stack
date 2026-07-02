@@ -1,5 +1,12 @@
 import { SITE_URL } from "./seo";
 
+// ⚠️ HONEST FRAMING (per Google's AI optimization guide): **Google Search ignores
+// llms.txt** — it "will neither harm nor help your site's visibility or rankings."
+// We keep these files because some NON-Google engines/tools read them, but this is
+// NOT a ranking lever. The real win is original, server-rendered, crawlable content
+// (see @stack/seo + the pages themselves), not this file.
+// https://developers.google.com/search/docs/fundamentals/ai-optimization-guide
+//
 // Shared builder for /llms.txt (curated) and /llms-full.txt (curated + full prose).
 // Kept as route handlers, not a static public/ file, so every URL is absolute and
 // derived from SITE_URL (env) instead of a hardcoded domain. Format follows

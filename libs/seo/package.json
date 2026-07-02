@@ -1,0 +1,32 @@
+{
+  "name": "@stack/seo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The one SEO/GEO door: pageMetadata() + JSON-LD builders + <JsonLd> + AI-crawler robots rules. Google-guide-aligned (server-rendered, crawlable, structured data for rich results — not an AI hack). Never hand-roll OG/canonical.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@stack/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/react": "^19.0.0",
+    "next": "^15.1.6",
+    "react": "^19.0.0"
+  },
+  "peerDependencies": {
+    "next": "^15.1.6",
+    "react": "^19.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ]
+  }
+}
