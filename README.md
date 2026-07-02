@@ -109,6 +109,12 @@ Full guide: [`docs/linting.md`](./docs/linting.md).
 
 The **folders** are fixed from day one, even solo. Only the **packaging** grows: `bun run dev` → Tilt → Docker → k8s, as you need it. You never restructure — you just add infra under `infra/`.
 
+## Almost free by design
+
+The stack is chosen so a real product gets from idea to paying users at near-zero cost — Cloudflare, Neon, Better Auth, Resend, PostHog, Clarity, Infisical, Creem — and most tiers carry you well past MVP (100k Cloudflare requests/day, 1M PostHog events/month, Better Auth's **no per-MAU billing**, Clarity uncapped forever). Every integration is **env-gated**: no key → silent no-op, the app still boots — you add a card, not a rebuild, when a ceiling actually bites. (The one exception: AI tokens, paid from the first call.)
+
+Why each tool, what it gives you, and the honest catches → [`docs/free-stack.md`](./docs/free-stack.md). Exact next-tier prices → [`docs/costs.md`](./docs/costs.md).
+
 ## What's real vs. a stub
 
 Almost all of it is real — it boots and proves the pattern end to end. Only a couple of things are deliberately left as placeholders for your product code.
