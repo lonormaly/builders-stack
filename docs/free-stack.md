@@ -70,7 +70,8 @@ Below is one entry per tool, in the layer order the stack uses — hosting → d
 - **Why we chose it:** As an MoR, Creem **handles global sales tax / VAT for you** — it's the seller of record, so you invoice one entity instead of registering for tax in every jurisdiction you sell into. (Any MoR gives you that; the stack ships the Creem adapter.) No monthly fee — you only pay when you make a sale.
 - **What you get free:** no monthly fee — pay per sale. You can wire the whole flow and ship without paying anything until money actually moves.
 - **Watch:** **3.9% + $0.40/txn** from the first sale — the MoR premium (~1% + $0.10 over a raw processor like Stripe's 2.9% + $0.30), the price of not doing tax compliance yourself. Optional features (revenue splits, affiliates, cart recovery) add further points — check current rates before enabling them.
-- **In this repo:** `@stack/payment` / `services/payment` — a Creem adapter + a Mock provider + tests, boots keyless. Apps go through the adapter interface, never call Creem directly, so swapping Creem for Stripe/Paddle/Lemon Squeezy is a one-file change. Keys: `CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET`.
+- **In this repo:** `@stack/payment` / `services/payment` — a Creem adapter + a Mock provider + tests, boots keyless. Apps go through the adapter interface, never call Creem directly, so swapping Creem for Stripe/Paddle/Lemon Squeezy/[Dodo](https://dodopayments.com/) is a one-file change. Keys: `CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET`.
+- **Delulus Club perk:** both **Creem** and **[Dodo Payments](https://dodopayments.com/)** — the two Merchant-of-Record options worth a look here — offer **Delulus Club members a lifetime exclusive deal**. [Reach out to Shai](https://www.linkedin.com/in/shaisnir/) for details.
 
 ---
 
