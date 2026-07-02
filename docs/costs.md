@@ -9,6 +9,7 @@
 | **Resend**                     | transactional + drip email (`@stack/email`)                              | 3,000/mo **but 100/day** (the real ceiling)        | 100/day cap or 3k/mo → Pro **$20/mo** (lifts the daily cap)                                      |
 | **PostHog**                    | product analytics + session replay + error tracking (`@stack/analytics`) | 1M events + 5k replays + 100k errors **per month** | past the monthly free allotment → usage-based                                                    |
 | **Microsoft Clarity**          | session recording + heatmaps (`@stack/analytics`)                        | **free forever, no cap**                           | never — it's free                                                                                |
+| **Cloudflare Workers**         | frontend hosting (`apps/web`, `apps/landing` via OpenNext)               | ~100k requests/day                                 | past ~100k req/day → Workers Paid **$5/mo** (10M req included)                                   |
 | **Creem** (Merchant of Record) | payments (`@stack/payment`)                                              | no monthly fee — pay per sale                      | **3.9% + $0.40/txn** from the first sale (MoR premium; add-on features cost more)                |
 | **Infisical**                  | secrets management (optional, see [`secrets.md`](./secrets.md))          | free ≤ 5 identities                                | > 5 identities → paid, or self-host (MIT) for unlimited                                          |
 | **Mobbin**                     | UI reference MCP for your agent                                          | app browsing is free; **the MCP is paywalled**     | the MCP needs a paid plan (~$10–13/mo) — free tier returns a 401                                 |
@@ -21,7 +22,9 @@
 
 ## Everything else is genuinely free at MVP scale
 
-Postgres (Neon), email (Resend, within 100/day), analytics (PostHog + Clarity), and payments (Creem — you only pay when you make a sale) all sit inside free tiers or pay-per-use that an early-stage project rarely exceeds. And because every one is **env-gated**, you don't pay — or even sign up — until you actually want that feature on.
+Postgres (Neon), frontend hosting (Cloudflare Workers), secrets (Infisical), email (Resend, within 100/day), analytics (PostHog + Clarity), and payments (Creem — you only pay when you make a sale) all sit inside free tiers or pay-per-use that an early-stage project rarely exceeds. And because every one is **env-gated**, you don't pay — or even sign up — until you actually want that feature on.
+
+These free tiers aren't just MVP-training-wheels — most of them carry you **well into real scale**. 100k Cloudflare requests/day, Neon's compute allotment, Infisical for a small team, 1M PostHog events/month, Clarity uncapped forever: that's a live product with real users, not a toy. And when you do outgrow one, the next tier is a card, not a rebuild — Cloudflare Workers jumps to $5/mo, Neon and PostHog go usage-based, Resend Pro is $20. You add a line item as a specific ceiling actually bites, one at a time — you don't front-load a bill to launch.
 
 ## Compare: Creem vs Stripe (the MoR premium)
 
@@ -31,4 +34,4 @@ Creem is a **Merchant of Record** — it's the seller of record, so it handles g
 
 _Prices verified July 2026 — providers change tiers; re-check the linked pages before you rely on a number._
 
-Sources: [Neon pricing](https://neon.tech/pricing) · [OpenAI pricing](https://openai.com/api/pricing) · [Anthropic pricing](https://www.anthropic.com/pricing) · [Resend pricing](https://resend.com/pricing) · [PostHog pricing](https://posthog.com/pricing) · [Microsoft Clarity](https://clarity.microsoft.com/) · [Creem pricing](https://www.creem.io/) · [Infisical pricing](https://infisical.com/pricing) · [Mobbin](https://mobbin.com/) · [Nx Cloud pricing](https://nx.app/pricing)
+Sources: [Neon pricing](https://neon.tech/pricing) · [OpenAI pricing](https://openai.com/api/pricing) · [Anthropic pricing](https://www.anthropic.com/pricing) · [Cloudflare Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/) · [Resend pricing](https://resend.com/pricing) · [PostHog pricing](https://posthog.com/pricing) · [Microsoft Clarity](https://clarity.microsoft.com/) · [Creem pricing](https://www.creem.io/) · [Infisical pricing](https://infisical.com/pricing) · [Mobbin](https://mobbin.com/) · [Nx Cloud pricing](https://nx.app/pricing)

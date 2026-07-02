@@ -81,6 +81,13 @@ Add a per-app `wrangler.toml`: the `nodejs_compat` flag, a `compatibility_date` 
 bun run cf:deploy       # → https://<worker>.workers.dev (or a custom domain)
 ```
 
+`wrangler deploy` needs two credentials in its environment (from CI/deploy, not `.env.local`):
+
+- **`CLOUDFLARE_ACCOUNT_ID`** — Cloudflare dashboard → your account → _Account ID_ (right sidebar).
+- **`CLOUDFLARE_API_TOKEN`** — Cloudflare dashboard → _My Profile → API Tokens_ → a token with **Workers edit** permissions.
+
+Cloudflare Workers' free tier (~100k requests/day) carries you well into real traffic before you pay.
+
 Set `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` as Worker vars; pull secrets via Infisical's native Cloudflare connector (see below) rather than `wrangler secret put`. Prefer this over the older `next-on-pages` — OpenNext is the current, framework-native path.
 
 ## 5. Secrets — never hand-copied

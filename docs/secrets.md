@@ -20,6 +20,13 @@ infisical run --env=dev -- bun --filter @stack/api dev  # or a single service
 
 Or fetch at boot with the SDK (`@infisical/sdk`). Day-to-day you edit a field in the Infisical UI — nothing to redeploy locally. _(Pattern from Laor: Infisical is the source of truth; `.env.local` is only local fill-ins; a `scripts/infisical-push.sh` is seed/recovery only, not the everyday path.)_
 
+**Non-interactive `infisical run` (CI / deploy)** — `infisical login` is for humans; CI and deploy jobs authenticate with a **Machine Identity** (Universal Auth) via three env vars:
+
+- **`INFISICAL_PROJECT_ID`** — Infisical → your project → _Settings → Project ID_.
+- **`INFISICAL_CLIENT_ID`** / **`INFISICAL_CLIENT_SECRET`** — Infisical → _Organization → Access Control → Machine Identities_ → create one with Universal Auth; it hands you the client id + secret.
+
+Local dev doesn't need these — it uses `.env.local` (see §1); the machine identity is only for team/CI/prod secret injection. Infisical's free tier covers a small team's secrets + members.
+
 ## 3. Deploy — native integrations (easy install)
 
 Infisical injects secrets at deploy time via **native** integrations, so you never hand-copy secrets into a platform:

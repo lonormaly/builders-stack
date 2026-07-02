@@ -103,6 +103,10 @@ That wires up four MCP servers:
 
 Short version: **~$0/month at MVP scale.** The only day-one costs are AI tokens (no free tier) and, optionally, Mobbin's MCP. Full breakdown: [`costs.md`](./costs.md).
 
+## 5. Deploying (optional)
+
+Same keys, real values. For prod/preview, point `DATABASE_URL` at your Neon connection string (one value per environment — no parallel prod/preview vars). The deploy-only credentials live in the deploy docs: **Cloudflare** (`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN`) in [`deploy.md`](./deploy.md); **Infisical** machine identity for CI secret injection in [`secrets.md`](./secrets.md).
+
 ## Machine-readable summary (for agents)
 
 Every env var → provider → signup URL → whether the app runs without it (env-gated).
