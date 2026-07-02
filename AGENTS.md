@@ -136,6 +136,18 @@ There is **one** env file: root `.env.local` (copy from `.env.example`). Two way
 
 Copy [`agents/mcp.json`](./agents/mcp.json) → repo-root `.mcp.json` to give your agent: **context7** (up-to-date library docs), **postgres** (reads the live schema/data via `DATABASE_URL` — needs `uv` installed for `uvx`), **filesystem** (repo-scoped), **mobbin** (real app UI reference — paid plan). See [`docs/getting-started.md`](./docs/getting-started.md#agent-tooling) for setup.
 
+### 7.1 Third-party skills / MCPs — vet before you install
+
+A skill or MCP is **executable code running with your agent's permissions, plus a payload the model obeys** — treat it like a dependency you're about to `sudo`. It's the same caution that made us swap the SQL-injectable Postgres MCP for a read-only one. Before an unfamiliar one touches your agent, run the 5-step law:
+
+1. **Scan** — `./scripts/scan-skill.sh <name>` (Clawdex). `malicious` → stop. `unknown` (most raw repos) → manual review + a code scanner, not a pass.
+2. **Read the source** — the actual `SKILL.md` **and every bundled script/hook**, not the README. Reject prompt-injection/override language, non-official phone-home URLs, obfuscated/base64 instructions, "act without confirmation", or `curl | sh` installers.
+3. **Check permissions** — inspect `allowed-tools` and any hooks (hooks auto-execute = highest risk). Reject broad grants + auto-installed hooks.
+4. **Check provenance** — official (`anthropics/*`) / established firm > single-author brand-new repo. Mega-aggregator installer CLIs are untrusted by default. Confirm a real LICENSE.
+5. **Prefer first-party; pin commits** — small enough? author it. When you vendor, pin a commit SHA, never a moving branch.
+
+Full law + our curated, scan-gated recommended list (adapt / link-only / reject tiers): [`docs/agent-skills.md`](./docs/agent-skills.md). Scanner: [`scripts/scan-skill.sh`](./scripts/scan-skill.sh).
+
 ## 8. Before you finish
 
 - `bunx nx run-many -t typecheck` passes (all 14).

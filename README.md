@@ -154,6 +154,8 @@ Batteries-included, all **env-gated** (no keys → silent no-op, apps still boot
 
 Start at [`AGENTS.md`](./AGENTS.md) — the repo-root primer Codex, Cursor, and Copilot read by convention: the map of where everything lives and the conventions to follow (Claude Code also reads [`CLAUDE.md`](./CLAUDE.md)). The [`agents/`](./agents) folder is the deep dive: skills, subagents, and an MCP config (`cp agents/mcp.json .mcp.json`) so an agent can plug in and start building _inside the structure_ instead of fighting it.
 
+Bringing in a third-party skill or MCP? **Vet it first** — it's code with your agent's permissions. [`docs/agent-skills.md`](./docs/agent-skills.md) is the "vet before you install" law + a curated, scan-gated recommended list; [`scripts/scan-skill.sh`](./scripts/scan-skill.sh) is the first-gate reputation check.
+
 ---
 
 MIT. Steal it, ship faster.

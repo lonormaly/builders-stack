@@ -25,4 +25,8 @@ This repo is a **starter template** — you clone it and build your product on t
 - **Payment webhooks are signature-verified.** `services/payment` rejects any webhook whose HMAC signature doesn't match (`CreemProvider.verifyWebhook`), covered by a test.
 - **Auth sessions are signed** with `BETTER_AUTH_SECRET` (generate your own; never reuse an example value).
 
+## Supply chain — agent skills & MCPs
+
+A skill or MCP you hand your agent is **executable code running with your agent's permissions, plus a payload the model obeys** — the same swap that replaced the SQL-injectable Postgres MCP with a read-only one applies to everything you add next. Before installing an unfamiliar skill/MCP, run the **"vet before you install" law** (scan → read the source → check permissions/hooks → check provenance → prefer first-party & pin a commit): [`docs/agent-skills.md`](docs/agent-skills.md), with the first-gate reputation check at [`scripts/scan-skill.sh`](scripts/scan-skill.sh). It also carries our curated, scan-gated recommended list so you don't vendor something untrusted.
+
 If you find a gap in any of the above, that's exactly the kind of report we want.
