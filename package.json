@@ -30,7 +30,7 @@
     "@nx/node": "^23.0.1",
     "eslint": "^10.6.0",
     "eslint-plugin-oxlint": "1.72.0",
-    "lefthook": "^1.8.2",
+    "lefthook": "^2.1.9",
     "nx": "^23.0.1",
     "oxfmt": "0.57.0",
     "oxlint": "1.72.0",
