@@ -22,6 +22,10 @@ export const metadata = pageMetadata({
 // hardcode the origin. Cross-app link, so a plain anchor (not next/link).
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+// The blog lives on its own subdomain in prod (blog.<yourdomain>). Env-driven so it's
+// never hardcoded; defaults to the local portless URL. Cross-app link → plain anchor.
+const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_URL ?? "http://blog.stack.localhost:1355";
+
 const FEATURES = [
   {
     title: "apps · services · libs",
@@ -43,9 +47,14 @@ export default function Landing() {
       {/* Nav */}
       <header className="flex items-center justify-between">
         <span className="font-semibold">Builder&apos;s Stack</span>
-        <Button asChild variant="outline" size="sm">
-          <a href={APP_URL}>Log in</a>
-        </Button>
+        <nav className="flex items-center gap-4">
+          <a href={BLOG_URL} className="text-sm text-muted-foreground hover:text-foreground">
+            Blog
+          </a>
+          <Button asChild variant="outline" size="sm">
+            <a href={APP_URL}>Log in</a>
+          </Button>
+        </nav>
       </header>
 
       {/* Hero */}
@@ -103,7 +112,10 @@ export default function Landing() {
       </section>
 
       <footer className="pb-8 text-center text-sm text-muted-foreground">
-        MIT. Steal it, ship faster.
+        <a href={BLOG_URL} className="hover:text-foreground">
+          Blog
+        </a>{" "}
+        · MIT. Steal it, ship faster.
       </footer>
     </div>
   );

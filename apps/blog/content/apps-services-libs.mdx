@@ -1,0 +1,58 @@
+---
+title: "apps · services · libs: the only three folders we let ourselves have"
+description: "Why builders-stack splits code by who consumes it — not by feature or by tech — and how that one rule stopped us from restructuring the repo every quarter."
+date: "2026-06-24"
+updatedAt: "2026-07-02"
+author: "The builders-stack team"
+tags: ["structure", "monorepo", "nx"]
+---
+
+Every repo I have watched rot died the same way: not from bad code, but from nobody
+agreeing where code goes. A `utils/` that became a landfill. A `components/` folder
+three teams imported from in three incompatible ways. Six months in, half of every PR
+review was an argument about placement, and the answer changed depending on who showed
+up. builders-stack has exactly three top-level code folders, and the rule that picks
+between them is boring on purpose.
+
+## Split by exposure, not by feature
+
+The question we answer for every new piece of code is not "what does it do" but "who is
+allowed to consume it":
+
+- **`apps/`** — something a human opens. `apps/web` (the flagship), `apps/landing` (the
+  marketing site), `apps/blog` (what you're reading), `apps/mobile`. If it renders to a
+  person, it's an app.
+- **`services/`** — a deployable backend with a URL. `services/api` (Hono + Better
+  Auth), `services/payment`. If something calls it over the network, it's a service.
+- **`libs/`** — shared code imported by package name, never a deep path. `@stack/ui`,
+  `@stack/db`, `@stack/seo`, `@stack/config`. If more than one app or service needs it,
+  it's a lib.
+
+That's the whole taxonomy. The payoff is that you never restructure — you only add. A
+new surface is a new folder under `apps/`. A new integration is a new `@stack/*` lib.
+The shape of the repo on day 500 is the shape on day 1, just wider.
+
+## The boundaries have teeth
+
+A convention nobody enforces is a suggestion, and suggestions lose to deadlines. Nx tags
+every project (`type:app`, `type:lib`, `type:service`) and enforces the dependency
+direction between them, so an app can't reach into another app's internals and a lib
+can't import an app. The rule isn't in a wiki where it gets ignored — it's in
+`nx.json` and it fails `nx run-many -t lint`.
+
+The subtle part is that Nx can only resolve `@stack/*` to enforce those constraints
+because the same import paths are declared once in `tsconfig.base.json`. One `paths`
+block is doing double duty: TypeScript resolution and boundary enforcement. When we
+added this very blog, wiring it up was three lines — a workspace member, an `nx.tags`
+entry, and one path — precisely because the structure already had a slot shaped like it.
+
+## Why an agent cares
+
+The reason this matters more in 2026 than it did five years ago is that a coding agent
+navigates a repo the same way a new hire does — by inferring the rules from the shape.
+A folder named by _exposure_ tells the agent where a thing goes without it having to
+read every file first. We wrote more about how we make the public surfaces legible to
+crawlers and agents in [SEO you can't forget to do](/seo-as-a-build-gate).
+
+The lesson wasn't "use a monorepo". It was that the folder taxonomy is a decision you
+make once, cheaply, at the start — and pay for forever if you skip it.

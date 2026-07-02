@@ -29,6 +29,7 @@
       "@stack/payment": ["./services/payment/src/index.ts"],
       "@stack/web": ["./apps/web/index.ts"],
       "@stack/landing": ["./apps/landing/index.ts"],
+      "@stack/blog": ["./apps/blog/index.ts"],
       "@stack/mobile": ["./apps/mobile/index.ts"]
     }
   }

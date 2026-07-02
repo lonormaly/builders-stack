@@ -1,0 +1,8 @@
+/* The design system owns the theme. Import its stylesheet (Tailwind v4 + the CSS-var
+   tokens + shadcn base layer) — single source of truth, no duplication here. */
+@import "@stack/ui/styles.css";
+
+/* Tailwind v4 ignores node_modules, so point it at the lib source so the utility
+   classes used *inside* @stack/ui components get generated. (This app's own app/**
+   files are auto-detected.) */
+@source "../../../libs/ui/src";

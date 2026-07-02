@@ -25,6 +25,7 @@ All served roles use project-scoped names: `<service>.stack`
 | Role                             | URL                                     | Type                   |
 | -------------------------------- | --------------------------------------- | ---------------------- |
 | Web (`apps/web`)                 | `http://web.stack.localhost:1355`       | Bun / Next.js process  |
+| Blog (`apps/blog`)               | `http://blog.stack.localhost:1355`      | Next.js (static / SSG) |
 | API (`services/api`)             | `http://api.stack.localhost:1355`       | Bun process            |
 | Payment (`services/payment`)     | `http://payment.stack.localhost:1355`   | Bun process            |
 | Storybook (`libs/ui`)            | `http://storybook.stack.localhost:1355` | Storybook dev server   |

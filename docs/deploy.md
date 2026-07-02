@@ -90,6 +90,17 @@ Cloudflare Workers' free tier (~100k requests/day) carries you well into real tr
 
 Set `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` as Worker vars; pull secrets via Infisical's native Cloudflare connector (see below) rather than `wrangler secret put`. Prefer this over the older `next-on-pages` — OpenNext is the current, framework-native path.
 
+### `apps/blog` → its own subdomain (`blog.example.com`)
+
+The blog (`apps/blog`) is a **static / SSG** Next.js app — every page, `robots.txt`, `sitemap.xml`, `feed.xml`, and per-post OG card is prerendered at build. It deploys the same way as `apps/landing` (OpenNext → Cloudflare Workers), but onto its **own subdomain** so it can scale, cache, and be redeployed independently of the marketing site:
+
+1. **Build + deploy** from `apps/blog` (same `cf:deploy` script pattern as landing). Because it's fully static, Cloudflare Pages (`wrangler pages deploy .open-next` / or the OpenNext Worker) both work — pick Pages if you want git-push previews.
+2. **Point the subdomain at it:** in the Cloudflare dashboard add a custom domain `blog.example.com` to the Worker/Pages project (Cloudflare provisions the TLS cert automatically for a zone you already manage).
+3. **Set its own origin var:** the blog reads `NEXT_PUBLIC_SITE_URL` for canonical/OG/sitemap URLs — set it to `https://blog.example.com` as a Worker var (distinct from the web/landing origin). Set `NEXT_PUBLIC_LANDING_URL=https://example.com` so its header links back to the marketing site.
+4. **Link the other way:** set `NEXT_PUBLIC_BLOG_URL=https://blog.example.com` on `apps/landing` so its "Blog" nav/footer link resolves in prod. Locally both default to the portless URLs, so nothing is hardcoded.
+
+Keeping the blog on a subdomain (rather than a `/blog` path on the marketing site) means the two Next apps stay independent deploys — a content-only change never rebuilds or risks the landing page, and vice versa.
+
 ## 5. Secrets — never hand-copied
 
 Deploy-time secrets come from **[Infisical](secrets.md)**, not from files you copy into a platform. Its native Kubernetes operator syncs Infisical secrets straight into the k8s `Secret` (`stack-secrets`) that the Deployment references, so you edit a field in one UI and every environment picks it up. Full setup + the Cloudflare path: **[`docs/secrets.md`](./secrets.md)**.

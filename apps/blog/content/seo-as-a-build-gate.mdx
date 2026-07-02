@@ -1,0 +1,64 @@
+---
+title: "SEO you can't forget to do: how we made GEO a build gate"
+description: "We turned Google's AI-optimization advice into a script that fails the build. Here's what check:seo actually enforces — and the honest part it can't: original, first-hand content."
+date: "2026-07-01"
+updatedAt: "2026-07-02"
+author: "The builders-stack team"
+tags: ["seo", "geo", "structure"]
+---
+
+Every team says SEO matters and then ships a page with no `<title>`, no canonical, and a
+client-only shell that renders nothing until JavaScript runs. Not out of malice — it
+just isn't anyone's job on the day the page ships. So in builders-stack we did the only
+thing that reliably changes behavior: we made the omission fail `bun run check`. This
+post is the honest version of what that gate does, and the bigger thing it deliberately
+does not.
+
+## What a script can enforce
+
+`scripts/check-seo.ts` walks every public `page.tsx` across all apps and refuses to pass
+if any of three things is missing. The rules come straight from
+[Google's AI optimization guide](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide):
+
+- **The page is indexable with a snippet** — it must export `metadata` or
+  `generateMetadata`. In practice that means it goes through `@stack/seo`'s
+  `pageMetadata()`, the one door that fills canonical, Open Graph, and Twitter cards from
+  a single config so no page hand-rolls them and drifts.
+- **The content is server-rendered** — a public page can't be a root `"use client"`
+  component. If a crawler (or an AI answer engine) gets an empty div, you don't exist.
+  Interactivity is allowed; it just has to live in a child component.
+- **The site is discoverable** — every app serving public pages needs `robots.ts` and
+  `sitemap.ts`. The blog's sitemap is generated from the content directory, so a new
+  post can't be left out of it.
+
+Because the check is wired into `bun run check`, the lefthook pre-push hook, and CI,
+there is no path to `main` that skips it. The structured data (`articleJsonLd` +
+`<JsonLd>`) that earns rich results is built the same way — from `@stack/seo`, never a
+hand-inlined `<script>` tag that goes stale.
+
+## What a script cannot enforce
+
+Here is the part the tooling can't do for you, and pretending otherwise is where most
+"GEO" advice goes wrong: **the lever that gets you surfaced and cited is original,
+first-hand, expert content with a point of view.** Google says this plainly — there is
+no special schema, no magic file, no phrasing trick that substitutes for having
+something worth reading on a crawlable page.
+
+So the guide is blunt about what _not_ to do, and we put the same list in `AGENTS.md`:
+
+- Don't **chunk** your writing into bite-size fragments "for the AI". Write sections and
+  paragraphs because humans read that way — that's readability, not an AI format.
+- Don't write in **"AI syntax"**. There isn't one.
+- Don't mass-produce **scaled, recycled, or commodity** content, or spin a page per
+  keyword variation.
+- Don't treat **`llms.txt`** as a ranking lever. Google Search ignores it — it "will
+  neither harm nor help" your visibility. We still ship one for the non-Google tools
+  that read it, but we're honest that it's not why anyone finds us.
+
+## The division of labor
+
+That's the whole philosophy: automate the hygiene so it's impossible to forget, and
+spend the freed attention on the writing only a human with real experience can produce.
+The check makes sure this very post has a canonical URL, an Article JSON-LD node, an OG
+card, and a sitemap entry. Whether it's worth citing is on us — and on the folder
+structure that made [adding this blog a three-line change](/apps-services-libs).

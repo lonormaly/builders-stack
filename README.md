@@ -47,6 +47,7 @@ Served roles get stable named URLs via [Portless](https://github.com/vercel-labs
 | --------- | ------------------------------------------------------- |
 | Web       | `http://web.stack.localhost:1355`                       |
 | Landing   | `http://landing.stack.localhost:1355`                   |
+| Blog      | `http://blog.stack.localhost:1355`                      |
 | API       | `http://api.stack.localhost:1355` (`/health` · `/docs`) |
 | Payment   | `http://payment.stack.localhost:1355`                   |
 | Storybook | `http://storybook.stack.localhost:1355`                 |

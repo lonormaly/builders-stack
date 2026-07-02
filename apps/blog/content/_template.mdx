@@ -1,0 +1,33 @@
+---
+# Frontmatter contract — every field below is REQUIRED except `ogImage`.
+# The build (lib/posts.ts) throws if a required field is missing, so a broken
+# post fails CI instead of shipping half-baked. Files starting with `_` (like
+# this one) are ignored by the content loader — copy it to `my-post.mdx`.
+title: "Your headline — specific, honest, written for a human"
+description: "One or two sentences that would make sense as a search snippet. This becomes the meta description, the OG description, and the RSS summary."
+date: "2026-07-02" # ISO 8601. First published.
+updatedAt: "2026-07-02" # ISO 8601. Bump on every meaningful edit (freshness signal).
+author: "Your Name"
+tags: ["structure", "seo"] # a short list; shown as badges + used for context
+# ogImage: "/some-custom-card.png" # OPTIONAL — omit to use the dynamic per-post card
+---
+
+Open with the point. Say what you learned or built and why it matters, in your own
+voice, from your own experience. Do not warm up with a definition an AI could have
+written — lead with the first-hand thing only you can say.
+
+## Write sections for humans
+
+Use `##` / `###` headings and normal paragraphs because that is how people read — not
+because you are "chunking for AI". Well-organized prose is readability; there is no
+special AI syntax to adopt. See [writing-for-ai-search.md](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)
+for the source of truth.
+
+- Bullets when the content is genuinely a list.
+- Link to related posts internally so a reader (and a crawler) can follow the thread.
+- Show a real example — a command, a diff, a number — over a vague claim.
+
+## Close with something earned
+
+End on the actual takeaway, not a manufactured tagline. If you edited this later, bump
+`updatedAt` and say what changed.
