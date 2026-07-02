@@ -4,7 +4,7 @@ Every tool in this stack was picked so you can take a real product from an idea 
 
 Below is one entry per tool, in the layer order the stack uses — hosting → database → auth → email → analytics → secrets → payments — with why it's here, what you get free, the honest caveat, and where it's wired in this repo. Exact next-tier prices live in [`docs/costs.md`](./costs.md).
 
-**One exception to "free": the AI layer.** `libs/ai` (Vercel AI SDK + your model provider, `AI_API_KEY`) has **no free tier — you pay from the first token.** Everything else here boots and runs for $0 at MVP scale; AI is the single piece that costs money the moment you call it. Pick a cheaper model id to cap it. Details: [`docs/ai.md`](./ai.md).
+**One exception to "free": the AI layer — but it's one key, any model.** Instead of calling a provider's SDK (OpenAI, etc.) directly — which hard-wires every call site to one vendor — `libs/ai` wraps the **Vercel AI SDK**: a single `AI_API_KEY` behind a **provider-agnostic** interface, so you swap OpenAI ↔ Anthropic ↔ Google ↔ others by changing one line in `libs/ai/src/providers.ts`, never your call sites (or point it at the Vercel AI **Gateway** for one key across many models). It's the single piece with **no free tier — you pay from the first token** — but you're never locked to a vendor, and a cheaper model id caps the cost. Everything else here boots and runs for $0 at MVP scale. Details: [`docs/ai.md`](./ai.md).
 
 ---
 
