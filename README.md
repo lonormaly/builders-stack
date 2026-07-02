@@ -2,39 +2,11 @@
 
 [![CI](https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml)
 
+![builders-stack](./docs/assets/hero.png)
+
 **3 folders · 3 laws — everything else is a deletable example.**
 
 Three folders — `apps/` (what humans see) · `services/` (what has a URL) · `libs/` (shared, never served). Three laws — **no-upward-import** · **one-public-door** · **by-feature-not-layer**. The packages inside are real, working examples that prove the pattern end to end; you keep the shape and [gut the examples you don't need](./docs/make-it-yours.md). The structure is the product.
-
-```mermaid
-flowchart TD
-    subgraph apps["apps/ · what humans see"]
-        web["web"]
-        landing["landing"]
-        mobile["mobile"]
-    end
-    subgraph services["services/ · what has a URL"]
-        api["api"]
-        payment["payment"]
-        worker["ai-worker"]
-    end
-    subgraph libs["libs/ · shared · never served"]
-        ui["ui"]
-        auth["auth"]
-        db["db"]
-        ai["ai"]
-        config["config"]
-        analytics["analytics"]
-        email["email"]
-    end
-
-    apps --> services
-    apps --> libs
-    services --> libs
-
-    classDef never fill:#eef,stroke:#88a;
-    class libs never;
-```
 
 Dependencies only ever point **down** (`apps` → `services` → `libs`); an arrow pointing up is the design smell the boundary rule rejects. This is the map your coding agent navigates instead of re-guessing every session.
 
