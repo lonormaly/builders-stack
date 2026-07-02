@@ -3,8 +3,14 @@
 # actions current. Grouped so you review one PR per ecosystem, not a swarm.
 version: 2
 updates:
+  # Root + EVERY workspace package.json (apps/services/libs each declare their own deps —
+  # posthog-js, better-auth, … — so scanning only "/" would miss them). SOC2 supply-chain.
   - package-ecosystem: "npm"
-    directory: "/"
+    directories:
+      - "/"
+      - "/apps/*"
+      - "/services/*"
+      - "/libs/*"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10

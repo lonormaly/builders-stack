@@ -10,6 +10,14 @@
 export type AnalyticsEvents = {
   user_signed_up: { email: string };
   page_viewed: { path: string };
+
+  // --- Security / audit events (SOC2 CC7: monitoring) ---
+  // Emitted SERVER-side on auth actions via `securityEvent()`. They double as an audit
+  // trail (structured stdout line) AND a PostHog event. Only `auth_signed_in` is wired
+  // today (libs/auth session hook); the other two are ready for you to wire (see docs/soc2-readiness.md).
+  auth_signed_in: Record<string, never>;
+  auth_signed_out: Record<string, never>;
+  auth_login_failed: { email: string };
 };
 
 /** Union of valid event names. */
@@ -37,4 +45,26 @@ export function track<E extends AnalyticsEvent>(event: E, props: EventProps<E>):
  */
 export function serverEvent<E extends AnalyticsEvent>(event: E, properties: EventProps<E>) {
   return { event, properties } as const;
+}
+
+/**
+ * Audit logger for security-relevant events (sign-in/out, failed login, …). SOC2 CC7
+ * (monitoring) wants a durable, tamper-evident trail — so this writes a structured JSON
+ * line to stdout (picked up by ANY log aggregator, independent of PostHog) AND returns a
+ * `capture()`-shaped payload so the caller can also ship it to PostHog:
+ *
+ *   posthog.capture(securityEvent(userId, "auth_signed_in", {}))
+ *
+ * Typed against the SAME catalog, so a mistyped event name / payload won't compile. This is
+ * a pattern, not a SIEM — point the stdout at your log store and add alerting there.
+ */
+export function securityEvent<E extends AnalyticsEvent>(
+  actorId: string,
+  event: E,
+  properties: EventProps<E>,
+) {
+  console.info(
+    JSON.stringify({ audit: true, event, actorId, at: new Date().toISOString(), ...properties }),
+  );
+  return { distinctId: actorId, event, properties } as const;
 }

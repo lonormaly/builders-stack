@@ -82,6 +82,17 @@ These are load-bearing. Nx turns the two headline laws into **lint errors** (eve
 
 **Private-route convention (exempt):** a route is private if any path segment (route-group parens stripped) is `app`, `dashboard`, `protected`, `auth`, or `internal`.
 
+### 3.2 Compliance — enforced
+
+The template ships the technical half of compliance as **gates that bite**, not docs that rot.
+
+- **Accessibility is a lint gate.** Oxlint's `jsx-a11y` plugin runs at `correctness: error`, so an a11y violation (missing `alt`, click handler on a non-interactive element, …) **fails `bun run lint`** and CI. Fix it, or — only for a genuine false positive (e.g. an MDX element override that gets its text via `{...props}`) — suppress that one line with `// oxlint-disable-next-line jsx-a11y/<rule>` and a reason. Optional deeper axe-core runtime check: `scripts/check-a11y.ts` (a ready-to-enable stub).
+- **Secrets are scanned in CI.** `gitleaks` (config `.gitleaks.toml`) fails the build on a committed secret. Never commit real keys — they go through Infisical / `.env.local` (git-ignored).
+- **Dependencies are scanned.** `.github/dependabot.yml` (every workspace `package.json`) + an `osv-scanner` CI job. (Bun's binary lockfile limits OSV's JS coverage → Dependabot is primary; see `docs/soc2-readiness.md`.)
+- **Analytics are consent-gated (GDPR).** `@stack/analytics` does **not** initialize PostHog/Clarity until the user accepts `<ConsentBanner/>` — default off. Don't add a tracker that bypasses this.
+- **Audit trail.** `securityEvent()` (`@stack/analytics/events`) logs security events (sign-in wired in `libs/auth`); reuse it, don't hand-roll auth logging.
+- **The docs are the source of truth:** [`docs/soc2-readiness.md`](./docs/soc2-readiness.md) (SOC 2 Trust Service Criteria map — what's wired vs what you owe) and [`docs/gdpr.md`](./docs/gdpr.md) (consent/privacy/data-rights + the legal checklist). Be honest with users: a template gives readiness, not a report.
+
 ## 4. How to run — Tilt (dev servers) + Nx (tasks)
 
 Two tools, two jobs, no overlap: **Tilt = what's running; Nx = the task graph (build/typecheck/lint/test), caching, affected, boundaries, generators.** Dev servers are _never_ routed through Nx — you still `./tilt_up.sh`.

@@ -2,7 +2,7 @@ import { PostHog } from "posthog-node";
 import { sendEmail } from "@stack/email";
 // Server-safe event catalog — same names/types the client's `track` uses. Import from
 // the /events subpath (no browser SDK) so this server module stays import-safe.
-import { serverEvent } from "@stack/analytics/events";
+import { serverEvent, securityEvent } from "@stack/analytics/events";
 
 const KEY = process.env.POSTHOG_API_KEY;
 const HOST = process.env.POSTHOG_HOST ?? "https://us.i.posthog.com";
@@ -43,4 +43,15 @@ export async function onUserSignedUp(user: {
   } catch (err) {
     console.error("[auth] welcome email failed", err);
   }
+}
+
+/**
+ * SOC2 audit trail for a successful sign-in (wired to `session.create.after`).
+ * `securityEvent()` ALWAYS writes the structured stdout audit line; PostHog capture is
+ * best-effort (no key → no-op). Call securityEvent() first so the audit line is written
+ * even when PostHog is absent (optional-chaining would skip arg evaluation otherwise).
+ */
+export function logSignIn(userId: string): void {
+  const payload = securityEvent(userId, "auth_signed_in", {});
+  posthog()?.capture(payload);
 }

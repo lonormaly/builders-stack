@@ -1,0 +1,19 @@
+# gitleaks config — the secret-scanning gate's ruleset. Extends gitleaks' built-in rules
+# and allowlists paths that only ever hold generated output or documented placeholders, so
+# the gate has ZERO false positives (it must fire ONLY on a real committed secret).
+#
+# Wired into CI (.github/workflows/ci.yml). Run locally: `gitleaks detect --no-git --redact`.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build output, deps, lockfile, and .env.example (placeholders, never real keys)."
+paths = [
+  '''(^|/)\.next/''',
+  '''(^|/)dist/''',
+  '''(^|/)build/''',
+  '''(^|/)storybook-static/''',
+  '''(^|/)node_modules/''',
+  '''bun\.lockb$''',
+  '''\.env\.example$''',
+]

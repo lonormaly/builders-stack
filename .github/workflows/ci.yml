@@ -24,6 +24,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # COMPLIANCE — secret scanning (SOC2 CC6.1 / vuln mgmt). Fails the build if a real
+      # secret is committed. Config + allowlist: .gitleaks.toml. gitleaks-action reads it
+      # automatically. (Free for public repos + individuals; GitHub orgs need a free
+      # GITLEAKS_LICENSE — see https://gitleaks.io.)
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Oxlint + Oxfmt run over the WHOLE repo (Rust-fast, no Nx graph needed) —
       # they gate every PR in seconds. The Nx ESLint pass below (`nx affected -t
       # lint`) is the ONLY ESLint run and enforces module boundaries. See
@@ -45,5 +54,19 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       # ESLint boundary enforcement (@nx/enforce-module-boundaries) + typecheck + test + build.
+      # a11y is enforced inside the `oxlint` step above (jsx-a11y plugin, correctness=error).
       - name: Boundaries · typecheck · test · build (affected only)
         run: bunx nx affected -t lint typecheck test build
+
+  # COMPLIANCE — dependency vulnerability scan (SOC2 CC7.1 / vuln mgmt). The osv-scanner
+  # GitHub Action (Google's OSV database). Runs as its own job so a vuln finding is a
+  # distinct, visible gate. NOTE: bun 1.1.x ships a BINARY bun.lockb that OSV can't parse,
+  # so JS-dependency coverage here is limited until bun's text lockfile (1.2+) — Dependabot
+  # (.github/dependabot.yml) is the primary JS dep-update/alert mechanism. OSV still gates
+  # GitHub Actions pins, Dockerfiles, and any text lockfiles. See docs/soc2-readiness.md.
+  vuln-scan:
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.2.4"
+    permissions:
+      contents: read
+      security-events: write
+      actions: read

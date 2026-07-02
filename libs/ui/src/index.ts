@@ -19,6 +19,8 @@ export {
   CardContent,
   CardFooter,
 } from "./components/ui/card";
+export { ConsentBanner } from "./components/ui/consent-banner";
+export type { ConsentBannerProps } from "./components/ui/consent-banner";
 export {
   Dialog,
   DialogTrigger,

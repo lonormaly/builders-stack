@@ -9,6 +9,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { cors } from "hono/cors";
 import { auth } from "@stack/auth";
+import { db, user, eq } from "@stack/db";
 import { getEnv } from "@stack/config";
 import { captureServerException } from "./analytics.js";
 import {
@@ -38,6 +39,28 @@ app.get("/me", async (c) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "Unauthorized" }, 401);
   return c.json(session.user);
+});
+
+// --- GDPR data rights (STARTER) — access (export) + erasure (delete) ---
+// Both act on the caller's OWN session only. Starter scope: the Better Auth `user` row
+// (deleting it cascades sessions + accounts via FK `onDelete: "cascade"`). Before you rely
+// on these for a real DSAR, widen them to your app-owned tables (posts, …) and add an audit
+// log + confirmation flow. See docs/gdpr.md § "Data rights".
+app.get("/me/export", async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) return c.json({ error: "Unauthorized" }, 401);
+  const [row] = await db.select().from(user).where(eq(user.id, session.user.id));
+  return c.json({ exportedAt: new Date().toISOString(), user: row ?? null }, 200, {
+    "Content-Disposition": 'attachment; filename="my-data.json"',
+  });
+});
+
+app.post("/me/delete", async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) return c.json({ error: "Unauthorized" }, 401);
+  // Erasure: remove the user row; sessions + accounts cascade. Starter — extend to app data.
+  await db.delete(user).where(eq(user.id, session.user.id));
+  return c.json({ deleted: true, userId: session.user.id }, 200);
 });
 
 // --- posts CRUD ---

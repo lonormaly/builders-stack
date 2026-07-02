@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Analytics } from "@stack/analytics";
+import { Analytics, ConsentBanner } from "@stack/analytics";
 import { JsonLd, organizationJsonLd, pageMetadata, websiteJsonLd } from "@stack/seo";
 import { SITE_URL } from "./seo";
 
@@ -31,6 +31,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <JsonLd data={structuredData} />
         <Analytics>{children}</Analytics>
+        {/* GDPR: analytics stay dormant until the visitor accepts here. */}
+        <ConsentBanner policyHref="/privacy" />
       </body>
     </html>
   );

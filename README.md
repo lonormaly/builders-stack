@@ -150,6 +150,10 @@ Batteries-included, all **env-gated** (no keys → silent no-op, apps still boot
 - **Analytics** — PostHog (product analytics + session replay + error tracking, client _and_ server) and Microsoft Clarity. Client init is a single shared `@stack/analytics` `<Analytics/>` provider every app reuses; server capture is `posthog-node` in `services/api`. Cross-subdomain identity ties marketing-site visitors to signed-up users. See [`docs/analytics.md`](./docs/analytics.md).
 - **Email** — Resend + React Email (`@stack/email`): typed, previewable templates and a `sendEmail()` sender. On sign-up, Better Auth fires a `user_signed_up` event + a welcome email — the seed for a PostHog-driven drip. See [`docs/email.md`](./docs/email.md).
 
+## Compliance — enforced
+
+The technical half of compliance ships as **gates that fail the build**, not docs that rot: accessibility is a lint gate (Oxlint `jsx-a11y`, `correctness: error`), secrets are scanned in CI (gitleaks), dependencies are scanned (Dependabot + osv-scanner), and analytics are **consent-gated** — `@stack/analytics` stays dormant until the user accepts the `<ConsentBanner/>` (GDPR, default off). The readiness maps: **[`docs/soc2-readiness.md`](./docs/soc2-readiness.md)** (SOC 2 Trust Service Criteria — what's wired vs. what you owe) and **[`docs/gdpr.md`](./docs/gdpr.md)** (consent, privacy, data-rights endpoints + the legal checklist). A template gives readiness, not a report.
+
 ## For your AI agent
 
 Start at [`AGENTS.md`](./AGENTS.md) — the repo-root primer Codex, Cursor, and Copilot read by convention: the map of where everything lives and the conventions to follow (Claude Code also reads [`CLAUDE.md`](./CLAUDE.md)). The [`agents/`](./agents) folder is the deep dive: skills, subagents, and an MCP config (`cp agents/mcp.json .mcp.json`) so an agent can plug in and start building _inside the structure_ instead of fighting it.

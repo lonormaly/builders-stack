@@ -61,4 +61,14 @@ Grounded in Google's guide — read it, it's the source of truth: <https://devel
 
 **Private-route convention (exempt from the rules):** a route is private if any path segment (route-group parens stripped) is `app`, `dashboard`, `protected`, `auth`, or `internal`.
 
+## Compliance — enforced
+
+Technical compliance ships as **gates**, not just docs:
+
+- **a11y is a lint gate** — Oxlint `jsx-a11y` at `correctness: error` fails `bun run lint` + CI on accessibility violations. Suppress a genuine false positive with `// oxlint-disable-next-line jsx-a11y/<rule>` + a reason, never by weakening the rule. Optional axe-core runtime stub: `scripts/check-a11y.ts`.
+- **secrets scanned in CI** — `gitleaks` (`.gitleaks.toml`) fails the build on a committed secret.
+- **deps scanned** — `.github/dependabot.yml` (all workspace `package.json`) + `osv-scanner` CI job (bun binary-lockfile caveat → Dependabot primary; see `docs/soc2-readiness.md`).
+- **analytics consent-gated (GDPR)** — `@stack/analytics` stays dormant until the user accepts `<ConsentBanner/>` (default off). Audit trail via `securityEvent()` (`@stack/analytics/events`), wired at sign-in in `libs/auth`.
+- **source of truth:** [`docs/soc2-readiness.md`](./docs/soc2-readiness.md) (Trust Service Criteria map) + [`docs/gdpr.md`](./docs/gdpr.md) (consent/privacy/data-rights + legal checklist). A template gives readiness, not a report — say so.
+
 See `agents/` for skills, subagents, and MCP config.
