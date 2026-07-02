@@ -68,6 +68,8 @@ Two rules keep it honest (borrowed from Nx):
 
 Inside each app/service, organize **by feature** (`billing/`, `users/`), not by layer (`controllers/`, `models/`). Folders should tell you what the thing _does_.
 
+Migrating an existing project in → [`docs/migration.md`](./docs/migration.md).
+
 ## The runtime half — Tilt
 
 Folders tell you _where things live_. The Tiltfile (**`.devops/Tiltfile`** — the root `Tiltfile` just `load_dynamic`s it, so edit the one in `.devops/`) tells you _what's running_. One `./tilt_up.sh` boots every role, shows live status + logs in one dashboard, and turns one-off flows (deploy, tunnel, `db push`) into click-buttons. It's also a machine-readable manifest your agent reads to know what exists and how to run it.
