@@ -1,4 +1,4 @@
-# builders-stack
+# The Modern Builders Stack for 2026
 
 [![CI](https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml)
 
