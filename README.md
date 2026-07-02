@@ -20,7 +20,9 @@ An opinionated, AI-native starter for 2026. Clone it, run one command, and you h
 
 ## Why this exists
 
-Your AI agent keeps rewriting the same auth helper, because every session it starts from zero and guesses where things live. Structure is the map that fixes that — for the agent _and_ for you. This repo is that map, ready to clone.
+Most of us skip "real" structure on a new project — _"it's just an MVP, we'll clean it up later."_ That's exactly where the most expensive, least-budgeted cost begins: the **restructure tax**, the week (sometimes the quarter) you later spend moving every file into the shape the project needed all along, while the roadmap waits.
+
+In 2026 it isn't worth paying. Building it right on day one is the _fast_ path, not the slow one — you pay that cost once, up front, when it's nearly free, and then it **grows with you**: the same three folders carry a weekend prototype and a funded team, sized to your product's roles, not your traffic. The stack underneath is almost all **free tools** on tiers generous enough to grow with you, so a fresh clone runs at roughly **$0**. You ship real products faster, made right the first time. (That your coding agent can also read the structure cleanly instead of re-deriving it every session is one more payoff — not the reason.)
 
 "One app" is a lie. The moment your project does anything real it already has **roles**: something users see, something with a URL, something shared between them. Name those roles and everything has a home. Don't, and it all rots into one folder nobody — human or agent — can navigate.
 
