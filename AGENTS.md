@@ -22,7 +22,7 @@ This is a **bun-workspace monorepo** wrapped by **Nx** (task graph + enforced bo
 
 The first three are **what you RUN** — sorted by _who they're served to_ (your humans, your machines, your own code). `packages/` is the odd one out: **what you SHIP** — a built artifact exposed to people _outside_ your system (published to npm, embedded on a customer's site). Its tag is `type:package`; it may depend on `libs/*` only, and it's **terminal — nothing internal imports a package** (§3, law 9). If you ship nothing external, delete the folder.
 
-If you're about to create a file, first decide which bucket it belongs to. If it doesn't obviously fit one, ask — don't invent a _fifth_ top-level folder.
+If you're about to create a file, first decide which bucket it belongs to. If it doesn't obviously fit one, ask — don't invent a _fifth_ **code** bucket. (Non-code material — strategy, brand assets, brand-recipe skills — does have a home: **`ops/`**, a private, non-workspace sibling **excluded from Nx** (see `ops/README.md`). In an open-core split it lives in your *private* repo, never the public one. It's not a taxonomy peer of the four buckets.)
 
 ## 2. The map — all 17 packages
 
@@ -49,6 +49,7 @@ builders-stack/
 │   └── seo/          @stack/seo       the one door for page metadata + JSON-LD (enforced by check:seo)
 ├── packages/         what you SHIP (not run) — distributables served to third parties
 │   └── widget/       @stack/widget    embeddable feedback widget: IIFE (<script src>) + ESM build; type:package, libs-only, terminal
+├── ops/              PRIVATE, non-shipped — strategy · brand assets · brand-recipe skills (NOT a workspace, excluded from Nx; open-core → private repo; see ops/README.md)
 ├── infra/            Dockerfiles, docker-compose, k8s (your deploy config)
 ├── scripts/          deploy.sh, tunnel.sh, seed.sh, link-env.sh
 ├── api-collection/   Bruno API collection (version-controlled requests)
@@ -72,6 +73,7 @@ These are load-bearing. Nx turns the two headline laws into **lint errors** (eve
 7. **One tsconfig source of truth.** Every workspace's `tsconfig.json` extends the root `tsconfig.base.json`. Don't fork compiler options per package.
 8. **SEO/GEO through `@stack/seo` — enforced.** Every public page must export `metadata`/`generateMetadata` via `@stack/seo`'s `pageMetadata()`, and public content must be server-rendered. `bun run check:seo` (in `bun run check`, lefthook pre-push, and CI) **fails the build** otherwise. Never hand-roll `Metadata`/OG/canonical or inline JSON-LD — see § 3.1 below.
 9. **Packages are terminal.** A `packages/*` (tag `type:package`) is a **distributable you ship** (§1) — it may depend on `libs/*` **only** (not apps, services, or other packages), and **nothing internal may import it**. The tag matrix enforces both halves: `{ type:package → [type:lib] }`, and no other bucket lists `type:package` in its allowed tags, so an app/service/lib that imports `@stack/widget` **fails `lint`**. A package is a leaf that leaves the repo — never a dependency inside it.
+10. **Storybook-first UI.** Every reusable UI element is a `@stack/ui` component (bespoke ones too) — apps **compose**, never inline reusable UI or duplicate styles. A component is **incomplete** until it's in `libs/ui`, **has a Storybook story**, AND is used in an app (in the design system, in Storybook, *and* used — all three). And **every new screen/flow ships a Storybook demo:** build its view as a presentational component driven by swappable `mock-*` state and story it, so the *whole screen* is reviewable in Storybook with **no backend or keys** — the app page then only wires data + composes that view. (Because a `lib` can't import an `app` (law 1), storying a screen means lifting its presentational view into `libs/ui` — which is the point.) See `docs/design.md`.
 
 ### 3.1 SEO/GEO — the laws (enforced)
 
@@ -177,6 +179,7 @@ Full law + our curated, scan-gated recommended list (adapt / link-only / reject 
 - `bun run lint:boundaries` clean — no new upward import, no deep import past a lib's barrel.
 - New service is in `.devops/Tiltfile`.
 - New env var is in `.env.example` (with a safe local default, no real secret).
+- New UI component lives in `libs/ui`, has a **Storybook story**, and is used in an app; a new screen ships its **Storybook demo** (a `mock-*`-driven presentational view) — law 10.
 - Conventional-commit message (`feat:`, `fix:`, `docs:` …). See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## 9. Where to look next
