@@ -13,6 +13,12 @@ const oxlintConfigPath = fileURLToPath(new URL("./.oxlintrc.json", import.meta.u
  *   type:lib     → may depend on:  lib
  *   type:service → may depend on:  lib, service
  *   type:app     → may depend on:  lib, service   (NOT other apps)
+ *   type:package → may depend on:  lib            (a distributable you SHIP)
+ *
+ * `type:package` (packages/*) is the 4th bucket: what you ship to third parties
+ * (npm SDKs, embeddable widgets, CLIs). It may depend on libs only — and it's
+ * TERMINAL: no app/service/lib/package lists `type:package` in its allowed tags,
+ * so nothing internal can import a package. Shipped out, not consumed within.
  *
  * Tags live in each package.json under `nx.tags`. Deep imports past a lib's public
  * door (`@stack/db/src/...`) are also blocked here (banTransitiveDependencies keeps
@@ -37,7 +43,13 @@ export default [
       "@nx/enforce-module-boundaries": [
         "error",
         {
-          enforceBuildableLibDependency: true,
+          // Off: this repo bundles lib SOURCE at the consumer (Next.js/esbuild inline
+          // @stack/ui etc.) — no lib is independently built to `dist`, so the
+          // "buildable lib must not import a non-buildable lib" guard is inapplicable.
+          // It was a false positive on the first buildable consumer, `packages/widget`
+          // (a type:package that bundles @stack/ui/tokens source into its embed). The
+          // boundary LAWS below (the tag matrix) are what's enforced.
+          enforceBuildableLibDependency: false,
           allow: [],
           depConstraints: [
             { sourceTag: "type:lib", onlyDependOnLibsWithTags: ["type:lib"] },
@@ -48,6 +60,10 @@ export default [
             {
               sourceTag: "type:app",
               onlyDependOnLibsWithTags: ["type:lib", "type:service"],
+            },
+            {
+              sourceTag: "type:package",
+              onlyDependOnLibsWithTags: ["type:lib"],
             },
           ],
         },

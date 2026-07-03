@@ -7,6 +7,7 @@ This is a bun-workspace monorepo. Read this before writing code; it tells you wh
 - `apps/` — public UI. `apps/web` (Next.js app), `apps/landing` (public marketing), `apps/mobile` (React Native / Expo — real starter).
 - `services/` — anything with a URL. `services/api` (Hono + OpenAPI), `services/ai-worker` (background load), `services/payment` (Creem adapter).
 - `libs/` — shared, **never served**. `libs/ui` (shadcn + tokens + Storybook), `libs/auth` (Better Auth), `libs/db` (Drizzle), `libs/ai` (Vercel AI SDK), `libs/analytics` (PostHog + Clarity + typed events), `libs/email` (Resend + React Email), `libs/config` (typed env), `libs/api-types` (shared API contract). Import by package name: `@stack/ui`, `@stack/db`, …
+- `packages/` — **what you SHIP** (apps/services/libs are what you RUN). Distributable artifacts served to **third parties**: npm SDKs, embeddable widgets, CLIs. `packages/widget` (`@stack/widget`) is the worked example — an embeddable feedback widget with an IIFE (`<script src>`) + ESM build. **Tag `type:package`; may depend on `libs/*` only; TERMINAL — nothing internal imports a package** (shipped out, not consumed). No distributable to ship? Delete the folder.
 
 ## Conventions (do not break)
 
@@ -28,6 +29,7 @@ This is a bun-workspace monorepo. Read this before writing code; it tells you wh
 - New shared code used in 2+ places → a `libs/*` package with a `src/index.ts`.
 - New thing that needs its own URL/deploy → a `services/*`.
 - New user-facing surface → an `apps/*`.
+- New distributable served to third parties (npm SDK, embed widget, CLI) → a `packages/*` (tag `type:package`, build to `dist/`, depends on libs only, terminal). Recipe: `docs/packages.md`.
 
 ## How to work here (hard-won)
 

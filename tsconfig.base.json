@@ -27,6 +27,7 @@
       "@stack/api": ["./services/api/src/index.ts"],
       "@stack/ai-worker": ["./services/ai-worker/src/index.ts"],
       "@stack/payment": ["./services/payment/src/index.ts"],
+      "@stack/widget": ["./packages/widget/src/index.ts"],
       "@stack/web": ["./apps/web/index.ts"],
       "@stack/landing": ["./apps/landing/index.ts"],
       "@stack/blog": ["./apps/blog/index.ts"],

@@ -74,6 +74,22 @@ To drop AI entirely:
 
 ---
 
+## Adding a `packages/*` distributable (the 4th bucket)
+
+`apps`/`services`/`libs` are what you **run**; `packages/*` is what you **ship** —
+a distributable served to third parties (npm SDK, embeddable widget, CLI), tagged
+`type:package`, depending on `libs/*` only, and **terminal** (nothing internal
+imports it). The template ships one worked example, `packages/widget` (`@stack/widget`).
+
+- **Add one:** create `packages/<name>/`, tag it `type:package`, give it a `build`
+  script that emits to `dist/` (IIFE for `<script src>` + ESM for npm), add the
+  `@stack/<name>` path to `tsconfig.base.json`, version + publish. No Tiltfile
+  change (it's built, not served). Full recipe: [`docs/packages.md`](./packages.md).
+- **Delete it** (you distribute nothing — the common case): `rm -rf packages`,
+  drop `"packages/*"` from the root `package.json` `workspaces`, and remove the
+  `"@stack/widget"` line from `tsconfig.base.json` `paths`. Same five-places trail
+  as any package; then `bun install` → `bunx nx run-many -t typecheck`.
+
 ## Rename `@stack/*` → `@yourco/*`
 
 `@stack` is a placeholder scope. Make it yours in one sweep:

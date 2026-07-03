@@ -4,9 +4,11 @@
 
 ![builders-stack](./docs/assets/hero.png)
 
-**3 folders · 3 laws — everything else is a deletable example.**
+**3 folders · 3 laws — everything else is a deletable example** (+ `packages/` when you distribute).
 
 Three folders — `apps/` (what humans see) · `services/` (what has a URL) · `libs/` (shared, never served). Three laws — **no-upward-import** · **one-public-door** · **by-feature-not-layer**. The packages inside are real, working examples that prove the pattern end to end; you keep the shape and [gut the examples you don't need](./docs/make-it-yours.md). The structure is the product.
+
+Those three are **what you RUN**. There's a fourth, `packages/`, for **what you SHIP** — distributable artifacts served to _third parties_ (npm SDKs, embeddable widgets, CLIs), tagged `type:package`, depending on libs only, and **terminal** (nothing inside the repo imports them). Add it when you actually distribute something; delete it when you don't.
 
 Dependencies only ever point **down** (`apps` → `services` → `libs`); an arrow pointing up is the design smell the boundary rule rejects. This is the map your coding agent navigates instead of re-guessing every session.
 
@@ -61,6 +63,9 @@ See [`docs/portless.md`](./docs/portless.md) for the full convention.
 | **`apps/`**     | what humans see (web, landing, mobile, **blog**)                         | public UI                        |
 | **`services/`** | what has a URL (api, ai-worker, payment)                                 | served to other code             |
 | **`libs/`**     | shared code (ui, auth, db, ai, config, api-types, analytics, email, seo) | **never served** — consumed only |
+| **`packages/`** | what you **ship** — distributables (widget; npm SDKs, CLIs)              | served to **third parties** — terminal |
+
+The first three are **what you RUN**; `packages/` is **what you SHIP** — a built artifact (`type:package`) that leaves the repo (published/embedded), depends on `libs/*` only, and that nothing internal imports.
 
 Two rules keep it honest (borrowed from Nx):
 
@@ -139,6 +144,7 @@ Almost all of it is real — it boots and proves the pattern end to end. Only a 
 - `libs/analytics` — the `<Analytics/>` client provider **and** an isomorphic typed event catalog (`./events`) client and server share.
 - `libs/email` — Resend + React Email: typed, previewable templates + `sendEmail()`.
 - `libs/seo` — the one door for page metadata + JSON-LD + the AI-crawler robots allow-list; enforced by `check:seo`.
+- `packages/widget` — the worked example of the **4th bucket** (what you _ship_): an embeddable feedback widget that self-mounts into any third-party page. Real vanilla-DOM code, two build outputs (IIFE `<script src>` + ESM for npm), `bun:test`-pinned core, `type:package` (libs-only, terminal). Delete it if you distribute nothing.
 - the Tiltfile + Nx wiring + workspace plumbing.
 
 Everything above is **env-gated**: no keys → silent no-op, apps still boot.
