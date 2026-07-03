@@ -1,0 +1,8 @@
+{
+  "$comment": "Extends the single-source-of-truth base. Node CLI (no DOM, no JSX) — `@types/node` for fs/os/process. `esbuild --packages=external` keeps @clack/picocolors out of the bundle (npx resolves them from deps).",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "bun-types"]
+  },
+  "include": ["src"]
+}

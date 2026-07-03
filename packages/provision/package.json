@@ -1,0 +1,46 @@
+{
+  "name": "@builders-stack/provision",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLI that acquires + validates + stores the API keys / root credentials a builders-stack repo needs (reading .env.example as the var manifest), then optionally auto-provisions cloud projects. Root creds live in ~/.builders-stack (reused across repos, à la ~/.aws/credentials); per-repo values are upserted into .env.local without clobbering. May import libs/*; never apps/services.",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "main": "./dist/cli.js",
+  "bin": {
+    "builders-stack-provision": "./dist/cli.js",
+    "bsp": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/recipe.ts",
+      "import": "./dist/cli.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --packages=external --banner:js='#!/usr/bin/env node' --outfile=dist/cli.js && chmod +x dist/cli.js",
+    "typecheck": "tsc --noEmit",
+    "start": "bun run src/cli.ts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.1",
+    "bun-types": "^1.1.34",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.7.0"
+  },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  }
+}
