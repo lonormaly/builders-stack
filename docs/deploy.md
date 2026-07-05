@@ -4,6 +4,8 @@ The README promises the stack **scales without moving**: `bun run dev` → Tilt 
 
 > **Honesty first:** `scripts/deploy.sh` is an **echo-only scaffold**. It prints the exact commands a real deploy runs (build → push → migrate → roll out) but executes none of them — so you can read the shape before you wire in your own registry and cluster. This page is what those echoes become when you make them real.
 
+> **Operate-layer front door:** [`ops/deploy/`](../ops/deploy/) wraps this path — `ops/deploy/deploy-dev.sh` (pre-prod) and `ops/deploy/deploy-prod.sh` (prod, with a typed confirm) call `scripts/deploy.sh` so there's one entrypoint for shipping. DB steps are in [`ops/db/`](../ops/db/); a full CI dry-run before you push is [`ops/ci/local-ci.sh`](../ops/ci/local-ci.sh); if a deploy goes bad, [`ops/runbooks/rollback.md`](../ops/runbooks/rollback.md). `infra/` + `scripts/` are operate-adjacent and slated to consolidate under `ops/`.
+
 ## The path
 
 ```

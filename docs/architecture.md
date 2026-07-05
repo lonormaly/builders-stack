@@ -2,17 +2,21 @@
 
 The whole system rests on one idea: **"one app" is a lie.** The moment a project does anything real it has _roles_ — something users see, something with a URL, something shared between them. Name the roles and everything has a home. Don't, and it rots into one folder nobody — human or agent — can navigate.
 
-## The taxonomy — three folders, defined by exposure
+## The taxonomy — five buckets, defined by exposure
 
-The sorting question is always the same: **is it served, and to whom?**
+The sorting question is always the same: **is it served, and to whom?** Four buckets are **what the system _is_** (three you RUN + one you SHIP); a fifth, `ops/`, is **how you _operate_ it**.
 
-| Folder      | Role                            | Served?                          | Lives here                                                                                       |
-| ----------- | ------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `apps/`     | what **humans** see             | public UI                        | `@stack/web` (Next.js), `@stack/mobile` (React Native)                                           |
-| `services/` | what has a **URL** / own deploy | served to other code             | `@stack/api` (Hono + OpenAPI), `@stack/ai-worker` (background), `@stack/payment` (Creem adapter) |
-| `libs/`     | **shared** code                 | **never served** — consumed only | `@stack/ui`, `@stack/auth`, `@stack/db`, `@stack/ai`                                             |
+| Folder      | Role                            | Served?                                | Lives here                                                                                       |
+| ----------- | ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `apps/`     | what **humans** see             | public UI                              | `@stack/web` (Next.js), `@stack/mobile` (React Native)                                           |
+| `services/` | what has a **URL** / own deploy | served to other code                   | `@stack/api` (Hono + OpenAPI), `@stack/ai-worker` (background), `@stack/payment` (Creem adapter) |
+| `libs/`     | **shared** code                 | **never served** — consumed only       | `@stack/ui`, `@stack/auth`, `@stack/db`, `@stack/ai`                                             |
+| `packages/` | what you **ship**               | served to **third parties** — terminal | `@stack/widget` (embeddable widget: IIFE + ESM); npm SDKs, CLIs                                  |
+| `ops/`      | how you **operate** it          | not served — **drives** the rest       | `ops/deploy` · `ops/db` · `ops/secrets` (→ Ringtail) · `ops/runbooks` · `ops/ci`                 |
 
-That's the entire top level. Everything you build sorts into one of these three. If something doesn't fit, that's a signal to reconsider the design — not to add a fourth folder.
+`apps`·`services`·`libs` are **what you RUN**; `packages/` is **what you SHIP** — a `type:package` distributable that depends on `libs/*` only and that nothing internal imports; `ops/` is **how you OPERATE** it — the outermost layer that reaches _down_ to deploy/seed/provision the code while **nothing imports _from_ it**. `ops/` is deliberately **not a workspace** and **invisible to Nx** (no build target, no boundary to break) — a non-code sibling like `docs/`, not a code peer. See [`../ops/README.md`](../ops/README.md).
+
+Those five are the entire top level that carries meaning. Every piece of **code** you build sorts into one of the four code buckets; if it doesn't fit, that's a signal to reconsider the design — not to invent a fifth _code_ bucket. Operate material (deploy, migrations, runbooks, secret provisioning) is not code — it belongs in `ops/`.
 
 ## The dependency direction
 

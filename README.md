@@ -1,16 +1,41 @@
-# The Modern Builders Stack for 2026
+<p align="center">
+  <img src="./docs/assets/hero-banner.webp" alt="builders-stack" width="100%">
+</p>
 
-[![CI](https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml)
+<h1 align="center">builders-stack</h1>
 
-![builders-stack](./docs/assets/hero.png)
+<p align="center">
+  <strong>The starter repo your AI agent can actually navigate.</strong><br>
+  Four buckets for what your product <em>is</em> · one for how you <em>operate</em> it · three laws the linter enforces. The structure is the product.
+</p>
 
-**3 folders · 3 laws — everything else is a deletable example** (+ `packages/` when you distribute).
+<p align="center">
+  <a href="https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml"><img src="https://github.com/lonormaly/builders-stack/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/works%20with-Claude%20Code%20·%20Codex%20·%20Cursor-8A63D2" alt="Works with Claude Code, Codex, Cursor">
+  <a href="./CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
+  <a href="https://github.com/lonormaly/builders-stack/commits/main"><img src="https://img.shields.io/github/last-commit/lonormaly/builders-stack" alt="Last commit"></a>
+</p>
 
-Three folders — `apps/` (what humans see) · `services/` (what has a URL) · `libs/` (shared, never served). Three laws — **no-upward-import** · **one-public-door** · **by-feature-not-layer**. The packages inside are real, working examples that prove the pattern end to end; you keep the shape and [gut the examples you don't need](./docs/make-it-yours.md). The structure is the product.
+<p align="center">
+  <a href="#quickstart"><b>Quickstart</b></a> ·
+  <a href="#the-map--five-buckets-defined-by-exposure"><b>Structure</b></a> ·
+  <a href="./docs/architecture.md"><b>Taxonomy</b></a> ·
+  <a href="./ops/"><b>ops</b></a> ·
+  <a href="./ops/secrets/"><b>Provision (Ringtail)</b></a> ·
+  <a href="./docs/getting-started.md"><b>Docs</b></a> ·
+  <a href="./CONTRIBUTING.md"><b>Contributing</b></a>
+</p>
 
-Those three are **what you RUN**. There's a fourth, `packages/`, for **what you SHIP** — distributable artifacts served to _third parties_ (npm SDKs, embeddable widgets, CLIs), tagged `type:package`, depending on libs only, and **terminal** (nothing inside the repo imports them). Add it when you actually distribute something; delete it when you don't.
+---
 
-Dependencies only ever point **down** (`apps` → `services` → `libs`); an arrow pointing up is the design smell the boundary rule rejects. This is the map your coding agent navigates instead of re-guessing every session.
+**Four buckets for what the system _is_, one for how you _operate_ it — plus three laws the linter enforces.** Everything else is a deletable example.
+
+- **What you RUN** — `apps/` (served to **humans**) · `services/` (served to **machines** — anything with a URL) · `libs/` (**shared**, never served).
+- **What you SHIP** — `packages/` — distributables served to **third parties** (npm SDKs, embeddable widgets, CLIs): tagged `type:package`, depending on libs only, and **terminal** (nothing inside the repo imports them). Add it when you distribute something; delete it when you don't.
+- **How you OPERATE it** — `ops/` — deploy · db · secrets · runbooks · local-CI. The **outermost** layer: it reaches _down_ to drive the code; nothing reaches back up into it. Not a workspace, invisible to Nx. See [`ops/`](./ops/).
+
+Three laws — **no-upward-import** · **one-public-door** · **by-feature-not-layer**. Dependencies only ever point **down** (`apps` → `services` → `libs`); an arrow pointing up is the design smell the boundary rule rejects. The packages inside are real, working examples that prove the pattern end to end; keep the shape and [gut the examples you don't need](./docs/make-it-yours.md). **The structure is the product** — and it's the map your coding agent navigates instead of re-guessing every session.
 
 <!-- Optional second hero: a screenshot of the Tilt dashboard. Drop one at
      docs/assets/tilt-dashboard.png and uncomment the line below.
@@ -24,7 +49,7 @@ An opinionated, AI-native starter for 2026. Clone it, run one command, and you h
 
 Most of us skip "real" structure on a new project — _"it's just an MVP, we'll clean it up later."_ That's exactly where the most expensive, least-budgeted cost begins: the **restructure tax**, the week (sometimes the quarter) you later spend moving every file into the shape the project needed all along, while the roadmap waits.
 
-In 2026 it isn't worth paying. Building it right on day one is the _fast_ path, not the slow one — you pay that cost once, up front, when it's nearly free, and then it **grows with you**: the same three folders carry a weekend prototype and a funded team, sized to your product's roles, not your traffic. The stack underneath is almost all **free tools** on tiers generous enough to grow with you, so a fresh clone runs at roughly **$0**. You ship real products faster, made right the first time. (That your coding agent can also read the structure cleanly instead of re-deriving it every session is one more payoff — not the reason.)
+In 2026 it isn't worth paying. Building it right on day one is the _fast_ path, not the slow one — you pay that cost once, up front, when it's nearly free, and then it **grows with you**: the same buckets carry a weekend prototype and a funded team, sized to your product's roles, not your traffic. The stack underneath is almost all **free tools** on tiers generous enough to grow with you, so a fresh clone runs at roughly **$0**. You ship real products faster, made right the first time. (That your coding agent can also read the structure cleanly instead of re-deriving it every session is one more payoff — not the reason.)
 
 "One app" is a lie. The moment your project does anything real it already has **roles**: something users see, something with a URL, something shared between them. Name those roles and everything has a home. Don't, and it all rots into one folder nobody — human or agent — can navigate.
 
@@ -56,16 +81,33 @@ Served roles get stable named URLs via [Portless](https://github.com/vercel-labs
 
 See [`docs/portless.md`](./docs/portless.md) for the full convention.
 
-## The map — three folders, defined by exposure
+## The map — five buckets, defined by exposure
 
-| Folder          | Role                                                                     | Served?                                |
-| --------------- | ------------------------------------------------------------------------ | -------------------------------------- |
-| **`apps/`**     | what humans see (web, landing, mobile, **blog**)                         | public UI                              |
-| **`services/`** | what has a URL (api, ai-worker, payment)                                 | served to other code                   |
-| **`libs/`**     | shared code (ui, auth, db, ai, config, api-types, analytics, email, seo) | **never served** — consumed only       |
-| **`packages/`** | what you **ship** — distributables (widget; npm SDKs, CLIs)              | served to **third parties** — terminal |
+Four buckets are **what the system _is_**; the fifth is **how you _operate_ it**.
 
-The first three are **what you RUN**; `packages/` is **what you SHIP** — a built artifact (`type:package`) that leaves the repo (published/embedded), depends on `libs/*` only, and that nothing internal imports.
+![Structure at a glance — the top-level buckets as a file tree](./docs/assets/hero.png)
+
+| Bucket          | Role                                                                         | Served?                                |
+| --------------- | ---------------------------------------------------------------------------- | -------------------------------------- |
+| **`apps/`**     | what **humans** see (web, landing, mobile, **blog**)                         | public UI                              |
+| **`services/`** | what has a **URL** (api, ai-worker, payment)                                 | served to other code                   |
+| **`libs/`**     | **shared** code (ui, auth, db, ai, config, api-types, analytics, email, seo) | **never served** — consumed only       |
+| **`packages/`** | what you **ship** — distributables (widget; npm SDKs, CLIs)                  | served to **third parties** — terminal |
+| **`ops/`**      | how you **operate** it (deploy · db · secrets · runbooks · ci)               | not served — **drives** the rest       |
+
+`apps`·`services`·`libs` are **what you RUN**; `packages/` is **what you SHIP** — a built artifact (`type:package`) that leaves the repo, depends on `libs/*` only, and that nothing internal imports; `ops/` is **how you OPERATE** it — the outermost layer that reaches _down_ to deploy/seed/provision the code while nothing reaches back up into it (it isn't a workspace, so Nx never sees it). See [`ops/README.md`](./ops/README.md).
+
+The rest of the top level is **non-code siblings** — real folders, but not buckets and not in the build graph:
+
+| Folder            | What                                                                  |
+| ----------------- | --------------------------------------------------------------------- |
+| `docs/`           | the written docs (incl. `docs/brand/` — brand soul + voice + roadmap) |
+| `agents/`         | agent skills, subagents, MCP config (`cp agents/mcp.json .mcp.json`)  |
+| `api-collection/` | version-controlled Bruno API requests                                 |
+| `infra/`          | Dockerfiles · docker-compose · k8s manifests                          |
+| `scripts/`        | `deploy.sh` · `link-env.sh` · `seed.sh` · `tunnel.sh`                 |
+
+> **`infra/` and `scripts/` are operate-adjacent.** They do the same "how you operate it" job as `ops/` and are slated to consolidate under it in a follow-up. They're left in place for now (too many references to move safely in one pass); `ops/deploy` and `ops/db` already front them as the single entrypoint.
 
 Two rules keep it honest (borrowed from Nx):
 
