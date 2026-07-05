@@ -2,7 +2,8 @@
   "$comment": "Extends the single-source-of-truth base; adds jsx for the React Email .tsx templates (mirrors libs/ui).",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["node"]
   },
   "include": ["src"]
 }
