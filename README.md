@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>The starter repo your AI agent can actually navigate.</strong><br>
-  Four buckets for what your product <em>is</em> · one for how you <em>operate</em> it · three laws the linter enforces. The structure is the product.
+  Opinionated AI-native starter. Build your MVP as a <em>production-ready</em> structure.
 </p>
 
 <p align="center">
