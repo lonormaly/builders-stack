@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start --port 3000",
-    "typecheck": "tsc --noEmit",
-    "lint": "next lint"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@stack/analytics": "workspace:*",
