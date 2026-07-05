@@ -18,12 +18,12 @@
 </p>
 
 <p align="center">
-  <a href="#quickstart"><b>Quickstart</b></a> ·
+  <a href="./docs/getting-started.md"><b>Getting Started</b></a> ·
   <a href="#the-map--five-buckets-defined-by-exposure"><b>Structure</b></a> ·
-  <a href="./docs/architecture.md"><b>Taxonomy</b></a> ·
-  <a href="./ops/"><b>ops</b></a> ·
-  <a href="./ops/secrets/"><b>Provision (Ringtail)</b></a> ·
-  <a href="./docs/getting-started.md"><b>Docs</b></a> ·
+  <a href="./docs/architecture.md"><b>Architecture</b></a> ·
+  <a href="./docs/free-stack.md"><b>Free Stack</b></a> ·
+  <a href="./docs/costs.md"><b>Costs</b></a> ·
+  <a href="./docs/migration.md"><b>Migration</b></a> ·
   <a href="./CONTRIBUTING.md"><b>Contributing</b></a>
 </p>
 

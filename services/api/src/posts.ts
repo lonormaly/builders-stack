@@ -69,8 +69,11 @@ export const repo = {
   list: async (): Promise<Post[]> => (await db.select().from(posts)) as Post[],
   get: async (id: string): Promise<Post | undefined> =>
     one((await db.select().from(posts).where(eq(posts.id, id))) as Post[]),
-  create: async (input: NewPost): Promise<Post> =>
-    one((await db.insert(posts).values(input).returning()) as Post[])!,
+  create: async (input: NewPost): Promise<Post> => {
+    const row = one((await db.insert(posts).values(input).returning()) as Post[]);
+    if (!row) throw new Error("insert returned no row");
+    return row;
+  },
   update: async (id: string, patch: Partial<NewPost>): Promise<Post | undefined> =>
     one((await db.update(posts).set(patch).where(eq(posts.id, id)).returning()) as Post[]),
   remove: async (id: string): Promise<boolean> =>
