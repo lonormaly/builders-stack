@@ -38,7 +38,7 @@ Prove it yourself: `packages/widget` imports `@stack/ui/tokens` (a legal
    `publishConfig`. Depend on `libs/*` only.
 3. **Build to `dist/`** — a `build` script producing your outputs. For an embeddable
    widget that's **two**: an **IIFE** (`esbuild src/embed.ts --bundle --format=iife
-   --minify`) for a `<script src>` on any site, and an **ESM** build
+--minify`) for a `<script src>` on any site, and an **ESM** build
    (`--format=esm`) for npm consumers. A CLI/SDK may need only one. `dist/` is
    gitignored — it's a build artifact.
 4. **`tsconfig.base.json` `paths`** — add `"@stack/<name>": ["./packages/<name>/src/index.ts"]`

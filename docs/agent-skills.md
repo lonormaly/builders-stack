@@ -42,23 +42,23 @@ From our own security vetting. Three tiers. **Scan every one before install** (`
 
 Safe to draw from for a public starter. Cherry-pick; don't bulk-import.
 
-| Skill | Why | Note |
-| --- | --- | --- |
-| **`anthropics/*`** (official) | First-party, maintained, lowest supply-chain risk. **Start here for anything they cover.** | — |
-| **`coreyhaines31/marketingskills`** | MIT, clean, well-scoped. Marketing/GTM is the developer weak spot — this fills it. | **Cherry-pick a few** (cold-email, CRO, SEO-audit) — don't dump all ~50. |
-| **`mattpocock/skills`** | Testing + TypeScript, from a reputable author. | — |
-| **`trailofbits/skills`** | Security review / code-audit — **the gold standard**. | **CC-BY-SA** — preserve attribution if you redistribute. |
-| **`ui-ux-pro-max`** — data-CSV knowledge base **only** | The CSV knowledge base is inert data, low-risk, useful. | Take **only** the data-CSV part; the full bundle is Tier 2. |
+| Skill                                                  | Why                                                                                        | Note                                                                     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| **`anthropics/*`** (official)                          | First-party, maintained, lowest supply-chain risk. **Start here for anything they cover.** | —                                                                        |
+| **`coreyhaines31/marketingskills`**                    | MIT, clean, well-scoped. Marketing/GTM is the developer weak spot — this fills it.         | **Cherry-pick a few** (cold-email, CRO, SEO-audit) — don't dump all ~50. |
+| **`mattpocock/skills`**                                | Testing + TypeScript, from a reputable author.                                             | —                                                                        |
+| **`trailofbits/skills`**                               | Security review / code-audit — **the gold standard**.                                      | **CC-BY-SA** — preserve attribution if you redistribute.                 |
+| **`ui-ux-pro-max`** — data-CSV knowledge base **only** | The CSV knowledge base is inert data, low-risk, useful.                                    | Take **only** the data-CSV part; the full bundle is Tier 2.              |
 
 ### Tier 2 — Link-only / scan-first / opt-in (great but heavy or hook-installing)
 
 Genuinely good, but **install them yourself — don't bake them into the template.** Weight or auto-executing behavior makes them a per-user choice, not a default.
 
-| Skill | Why link-only |
-| --- | --- |
-| **`pbakaus/impeccable`** | Excellent design skill — but **~124 MB**, **auto-firing post-edit hooks**, and a **daily phone-home version check**. All fine if _you_ opt in; wrong to impose on every cloner. |
-| **the full `ui-ux` bundle** | Heavy; only the data-CSV slice (Tier 1) is lightweight enough to recommend outright. |
-| **Snyk Fix** | Strong, but needs the **Snyk MCP** wired up — an external dependency, so it's opt-in per user. |
+| Skill                       | Why link-only                                                                                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`pbakaus/impeccable`**    | Excellent design skill — but **~124 MB**, **auto-firing post-edit hooks**, and a **daily phone-home version check**. All fine if _you_ opt in; wrong to impose on every cloner. |
+| **the full `ui-ux` bundle** | Heavy; only the data-CSV slice (Tier 1) is lightweight enough to recommend outright.                                                                                            |
+| **Snyk Fix**                | Strong, but needs the **Snyk MCP** wired up — an external dependency, so it's opt-in per user.                                                                                  |
 
 ### Tier 3 — Reject for a public starter
 
