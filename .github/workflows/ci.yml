@@ -11,7 +11,7 @@ jobs:
   affected:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # nx affected needs history to diff against the base branch.
           fetch-depth: 0
@@ -29,7 +29,7 @@ jobs:
       # automatically. (Free for public repos + individuals; GitHub orgs need a free
       # GITLEAKS_LICENSE — see https://gitleaks.io.)
       - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -51,7 +51,7 @@ jobs:
       # Derives NX_BASE / NX_HEAD: on a PR, base = merge-base with the target
       # branch; on a push to main, base = the last successful commit.
       - name: Derive affected SHAs
-        uses: nrwl/nx-set-shas@v4
+        uses: nrwl/nx-set-shas@v5
 
       # ESLint boundary enforcement (@nx/enforce-module-boundaries) + typecheck + test + build.
       # a11y is enforced inside the `oxlint` step above (jsx-a11y plugin, correctness=error).
@@ -65,7 +65,7 @@ jobs:
   # (.github/dependabot.yml) is the primary JS dep-update/alert mechanism. OSV still gates
   # GitHub Actions pins, Dockerfiles, and any text lockfiles. See docs/soc2-readiness.md.
   vuln-scan:
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.2.4"
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8"
     permissions:
       contents: read
       security-events: write
