@@ -2,6 +2,8 @@
 
 Never commit real secrets. `.env.example` documents every key; `.env.local` (git-ignored) holds your local fill-ins. As you grow, move the source of truth to Infisical.
 
+> **Provisioning the keys — [Ringtail](https://github.com/ringtailkeys/ringtail).** The operate-layer front door for secrets is [`ops/secrets/`](../ops/secrets/), and it points to one tool: Ringtail. It reads this repo's `.env.example` as the manifest, raids each provider's token page via their official APIs, and **fans every key into `.env.local` (local) + Infisical (dev/staging/prod)** — exactly the two homes described below. One human "allow" per provider, then zero-touch; your agent orchestrates and **never sees a value**. Run `npx ringtail` (or `ops/secrets/bootstrap.sh`). The rest of this page is the model Ringtail provisions _into_.
+
 ## 1. Local dev — `.env.local`
 
 Copy `.env.example` → `.env.local`, fill it in. `./tilt_up.sh` sources it. Keep it clean — **strip inline comments** (an unstripped comment can corrupt a value, e.g. a client id).

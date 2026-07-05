@@ -5,6 +5,12 @@ served to_ (your humans, your machines, your own code). `packages/` is the odd o
 out: **what you SHIP** — a built, distributable artifact exposed to people _outside_
 your system. npm SDKs, embeddable widgets, and CLIs live here.
 
+> Those four buckets are **what the system _is_**. There's a fifth top-level folder,
+> [`ops/`](../ops/README.md), for **how you _operate_ it** (deploy · db · secrets ·
+> runbooks · ci) — but it's **not a code bucket**: it isn't a workspace, Nx doesn't
+> see it, and nothing imports from it. `packages/` is the last of the four _code_
+> buckets; `ops/` is a non-code sibling like `docs/`.
+
 The worked example is [`packages/widget`](../packages/widget) (`@stack/widget`): an
 embeddable feedback widget that self-mounts into any third-party page via a single
 `<script>` tag, with an IIFE build for `<script src>` and an ESM build for npm.

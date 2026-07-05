@@ -11,7 +11,7 @@ Read this **before writing code**. It tells you where everything lives so you do
 
 This is a **bun-workspace monorepo** wrapped by **Nx** (task graph + enforced boundaries + generators). Every package has a role defined by _one question: is it served, and to whom?_
 
-**Three buckets are what you RUN; a fourth (`packages/`) is what you SHIP.**
+**Four buckets are what the system _is_ (three you RUN + one you SHIP); a fifth, `ops/`, is how you _operate_ it.**
 
 | Folder      | Role                                | Served?                          | Examples                                                                                                                      |
 | ----------- | ----------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -19,10 +19,11 @@ This is a **bun-workspace monorepo** wrapped by **Nx** (task graph + enforced bo
 | `services/` | what has a **URL** / its own deploy | served to other code             | `@stack/api` (Hono + OpenAPI), `@stack/payment` (Creem adapter), `@stack/ai-worker` (background, no URL)                      |
 | `libs/`     | **shared** code                     | **never served** — consumed only | `@stack/ui`, `@stack/auth`, `@stack/db`, `@stack/ai`, `@stack/analytics`, `@stack/email`, `@stack/config`, `@stack/api-types` |
 | `packages/` | what you **ship** — a distributable | served to **third parties**      | `@stack/widget` (embeddable widget: IIFE `<script src>` + ESM); npm SDKs and CLIs live here too                               |
+| `ops/`      | how you **operate** it              | not served — **drives** the rest | `ops/deploy` · `ops/db` · `ops/secrets` (→ Ringtail) · `ops/runbooks` · `ops/ci`                                              |
 
-The first three are **what you RUN** — sorted by _who they're served to_ (your humans, your machines, your own code). `packages/` is the odd one out: **what you SHIP** — a built artifact exposed to people _outside_ your system (published to npm, embedded on a customer's site). Its tag is `type:package`; it may depend on `libs/*` only, and it's **terminal — nothing internal imports a package** (§3, law 9). If you ship nothing external, delete the folder.
+The first three are **what you RUN** — sorted by _who they're served to_ (your humans, your machines, your own code). `packages/` is **what you SHIP** — a built artifact exposed to people _outside_ your system (published to npm, embedded on a customer's site): tag `type:package`, depends on `libs/*` only, **terminal — nothing internal imports a package** (§3, law 9). `ops/` is **how you OPERATE** it — deploy · db · secrets · runbooks · local-CI: the **outermost** layer that reaches _down_ into the code to drive it, while **nothing imports _from_ `ops/`**. It's **not a workspace** and **Nx never sees it** — not a taxonomy peer of the four code buckets, but a non-code sibling like `docs/`. See `ops/README.md`. If you ship nothing external, delete `packages/`.
 
-If you're about to create a file, first decide which bucket it belongs to. If it doesn't obviously fit one, ask — don't invent a _fifth_ top-level folder.
+If you're about to create a file, first decide which bucket it belongs to. If it doesn't obviously fit one of the four **code** buckets, ask — don't invent a fifth _code_ bucket. (Operate material — deploy scripts, migrations, runbooks, secret provisioning — has a home: **`ops/`**, the non-workspace operate layer. Secret provisioning there points to **Ringtail** and nothing else; brand assets + strategy live in `docs/brand/`, not `ops/`.)
 
 ## 2. The map — all 17 packages
 
@@ -49,8 +50,9 @@ builders-stack/
 │   └── seo/          @stack/seo       the one door for page metadata + JSON-LD (enforced by check:seo)
 ├── packages/         what you SHIP (not run) — distributables served to third parties
 │   └── widget/       @stack/widget    embeddable feedback widget: IIFE (<script src>) + ESM build; type:package, libs-only, terminal
-├── infra/            Dockerfiles, docker-compose, k8s (your deploy config)
-├── scripts/          deploy.sh, tunnel.sh, seed.sh, link-env.sh
+├── ops/              how you OPERATE it — deploy · db · secrets(→Ringtail) · runbooks · ci (NOT a workspace, invisible to Nx; nothing imports FROM ops; see ops/README.md)
+├── infra/            Dockerfiles, docker-compose, k8s (operate-adjacent — slated to consolidate under ops/)
+├── scripts/          deploy.sh, tunnel.sh, seed.sh, link-env.sh (operate-adjacent — slated to consolidate under ops/)
 ├── api-collection/   Bruno API collection (version-controlled requests)
 ├── agents/           the deep dive: skills, subagents, mcp.json (this file links there)
 ├── docs/             getting-started · costs · ai · architecture · nx · portless · analytics · email · secrets
@@ -72,6 +74,8 @@ These are load-bearing. Nx turns the two headline laws into **lint errors** (eve
 7. **One tsconfig source of truth.** Every workspace's `tsconfig.json` extends the root `tsconfig.base.json`. Don't fork compiler options per package.
 8. **SEO/GEO through `@stack/seo` — enforced.** Every public page must export `metadata`/`generateMetadata` via `@stack/seo`'s `pageMetadata()`, and public content must be server-rendered. `bun run check:seo` (in `bun run check`, lefthook pre-push, and CI) **fails the build** otherwise. Never hand-roll `Metadata`/OG/canonical or inline JSON-LD — see § 3.1 below.
 9. **Packages are terminal.** A `packages/*` (tag `type:package`) is a **distributable you ship** (§1) — it may depend on `libs/*` **only** (not apps, services, or other packages), and **nothing internal may import it**. The tag matrix enforces both halves: `{ type:package → [type:lib] }`, and no other bucket lists `type:package` in its allowed tags, so an app/service/lib that imports `@stack/widget` **fails `lint`**. A package is a leaf that leaves the repo — never a dependency inside it.
+10. **`ops/` is the top of the graph — nothing imports from it.** `ops/` (deploy · db · secrets · runbooks · ci) is the **operate** layer: it reaches _down_ into the code to deploy/migrate/seed/provision it, and **no `app`/`service`/`lib`/`package` may reference `ops/*`**. It isn't a workspace, so `@stack/*` resolution can't reach it and Nx has no target there — the boundary is structural, not just a rule. Secret provisioning under `ops/secrets/` points to **Ringtail** and nothing else. Brand/strategy is **not** here — that's `docs/brand/`. See `ops/README.md`.
+11. **Storybook-first UI.** Every reusable UI element is a `@stack/ui` component (bespoke ones too) — apps **compose**, never inline reusable UI or duplicate styles. A component is **incomplete** until it's in `libs/ui`, **has a Storybook story**, AND is used in an app (in the design system, in Storybook, _and_ used — all three). And **every new screen/flow ships a Storybook demo:** build its view as a presentational component driven by swappable `mock-*` state and story it, so the _whole screen_ is reviewable in Storybook with **no backend or keys** — the app page then only wires data + composes that view. (Because a `lib` can't import an `app` (law 1), storying a screen means lifting its presentational view into `libs/ui` — which is the point.) See `docs/design.md`.
 
 ### 3.1 SEO/GEO — the laws (enforced)
 
@@ -176,7 +180,9 @@ Full law + our curated, scan-gated recommended list (adapt / link-only / reject 
 - `bun run lint` (oxlint) clean and `bun run format:check` (oxfmt) clean.
 - `bun run lint:boundaries` clean — no new upward import, no deep import past a lib's barrel.
 - New service is in `.devops/Tiltfile`.
-- New env var is in `.env.example` (with a safe local default, no real secret).
+- New env var is in `.env.example` (with a safe local default, no real secret) — provision real values with **Ringtail** (`ops/secrets/`), never commit them.
+- New UI component lives in `libs/ui`, has a **Storybook story**, and is used in an app; a new screen ships its **Storybook demo** (a `mock-*`-driven presentational view) — law 11.
+- Nothing new imports from `ops/*` (law 10). Operate scripts (deploy/migrate/seed/provision) live in `ops/`, and run CI locally first with `ops/ci/local-ci.sh`.
 - Conventional-commit message (`feat:`, `fix:`, `docs:` …). See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## 9. Where to look next
