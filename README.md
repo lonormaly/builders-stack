@@ -58,11 +58,11 @@ See [`docs/portless.md`](./docs/portless.md) for the full convention.
 
 ## The map — three folders, defined by exposure
 
-| Folder          | Role                                                                | Served?                          |
-| --------------- | ------------------------------------------------------------------- | -------------------------------- |
-| **`apps/`**     | what humans see (web, landing, mobile, **blog**)                         | public UI                        |
-| **`services/`** | what has a URL (api, ai-worker, payment)                                 | served to other code             |
-| **`libs/`**     | shared code (ui, auth, db, ai, config, api-types, analytics, email, seo) | **never served** — consumed only |
+| Folder          | Role                                                                     | Served?                                |
+| --------------- | ------------------------------------------------------------------------ | -------------------------------------- |
+| **`apps/`**     | what humans see (web, landing, mobile, **blog**)                         | public UI                              |
+| **`services/`** | what has a URL (api, ai-worker, payment)                                 | served to other code                   |
+| **`libs/`**     | shared code (ui, auth, db, ai, config, api-types, analytics, email, seo) | **never served** — consumed only       |
 | **`packages/`** | what you **ship** — distributables (widget; npm SDKs, CLIs)              | served to **third parties** — terminal |
 
 The first three are **what you RUN**; `packages/` is **what you SHIP** — a built artifact (`type:package`) that leaves the repo (published/embedded), depends on `libs/*` only, and that nothing internal imports.

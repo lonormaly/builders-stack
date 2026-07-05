@@ -13,12 +13,12 @@ This is a **bun-workspace monorepo** wrapped by **Nx** (task graph + enforced bo
 
 **Three buckets are what you RUN; a fourth (`packages/`) is what you SHIP.**
 
-| Folder       | Role                                | Served?                          | Examples                                                                                                                      |
-| ------------ | ----------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `apps/`      | what **humans** see                 | public UI                        | `@stack/web` (Next.js), `@stack/landing` (marketing), `@stack/mobile` (Expo/React Native)                                     |
-| `services/`  | what has a **URL** / its own deploy | served to other code             | `@stack/api` (Hono + OpenAPI), `@stack/payment` (Creem adapter), `@stack/ai-worker` (background, no URL)                      |
-| `libs/`      | **shared** code                     | **never served** — consumed only | `@stack/ui`, `@stack/auth`, `@stack/db`, `@stack/ai`, `@stack/analytics`, `@stack/email`, `@stack/config`, `@stack/api-types` |
-| `packages/`  | what you **ship** — a distributable | served to **third parties**      | `@stack/widget` (embeddable widget: IIFE `<script src>` + ESM); npm SDKs and CLIs live here too                              |
+| Folder      | Role                                | Served?                          | Examples                                                                                                                      |
+| ----------- | ----------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `apps/`     | what **humans** see                 | public UI                        | `@stack/web` (Next.js), `@stack/landing` (marketing), `@stack/mobile` (Expo/React Native)                                     |
+| `services/` | what has a **URL** / its own deploy | served to other code             | `@stack/api` (Hono + OpenAPI), `@stack/payment` (Creem adapter), `@stack/ai-worker` (background, no URL)                      |
+| `libs/`     | **shared** code                     | **never served** — consumed only | `@stack/ui`, `@stack/auth`, `@stack/db`, `@stack/ai`, `@stack/analytics`, `@stack/email`, `@stack/config`, `@stack/api-types` |
+| `packages/` | what you **ship** — a distributable | served to **third parties**      | `@stack/widget` (embeddable widget: IIFE `<script src>` + ESM); npm SDKs and CLIs live here too                               |
 
 The first three are **what you RUN** — sorted by _who they're served to_ (your humans, your machines, your own code). `packages/` is the odd one out: **what you SHIP** — a built artifact exposed to people _outside_ your system (published to npm, embedded on a customer's site). Its tag is `type:package`; it may depend on `libs/*` only, and it's **terminal — nothing internal imports a package** (§3, law 9). If you ship nothing external, delete the folder.
 
@@ -135,13 +135,13 @@ cp .env.example .env.local
 
 ## 5. Adding things — the decision
 
-| You need…                         | Put it in                | Then                                                                                                                                     |
-| --------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| shared code used in 2+ places     | a new `libs/*` package   | scaffold with the Nx generator: `nx g @nx/js:lib …` — it's born tagged `type:lib`, named `@stack/*`, with its single `src/index.ts` door |
-| something with its own URL/deploy | a new `services/*`       | scaffold, then add a `local_resource` to `.devops/Tiltfile`; skill: `agents/skills/add-a-service`                                        |
-| a new user-facing surface         | a new `apps/*`           | scaffold, then wire it into `.devops/Tiltfile`                                                                                           |
-| a distributable to ship out (npm SDK, embed widget, CLI) | a new `packages/*` | tag `type:package`, build to `dist/` (IIFE + ESM), depends on libs only, terminal. Recipe: [`docs/packages.md`](./docs/packages.md); worked example: `packages/widget` |
-| a new payment provider            | `@stack/payment` adapter | never inline in an app; skill: `agents/skills/wire-a-new-payment-provider`                                                               |
+| You need…                                                | Put it in                | Then                                                                                                                                                                   |
+| -------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| shared code used in 2+ places                            | a new `libs/*` package   | scaffold with the Nx generator: `nx g @nx/js:lib …` — it's born tagged `type:lib`, named `@stack/*`, with its single `src/index.ts` door                               |
+| something with its own URL/deploy                        | a new `services/*`       | scaffold, then add a `local_resource` to `.devops/Tiltfile`; skill: `agents/skills/add-a-service`                                                                      |
+| a new user-facing surface                                | a new `apps/*`           | scaffold, then wire it into `.devops/Tiltfile`                                                                                                                         |
+| a distributable to ship out (npm SDK, embed widget, CLI) | a new `packages/*`       | tag `type:package`, build to `dist/` (IIFE + ESM), depends on libs only, terminal. Recipe: [`docs/packages.md`](./docs/packages.md); worked example: `packages/widget` |
+| a new payment provider                                   | `@stack/payment` adapter | never inline in an app; skill: `agents/skills/wire-a-new-payment-provider`                                                                                             |
 
 Prefer the Nx generators — a generated package **can't be born breaking the boundary laws** (it's tagged and has its barrel from birth). Commands: [`docs/nx.md`](./docs/nx.md).
 
