@@ -4,9 +4,11 @@
 
 ![builders-stack](./docs/assets/hero.png)
 
-**3 folders · 3 laws — everything else is a deletable example.**
+**3 folders · 3 laws — everything else is a deletable example** (+ `packages/` when you distribute).
 
 Three folders — `apps/` (what humans see) · `services/` (what has a URL) · `libs/` (shared, never served). Three laws — **no-upward-import** · **one-public-door** · **by-feature-not-layer**. The packages inside are real, working examples that prove the pattern end to end; you keep the shape and [gut the examples you don't need](./docs/make-it-yours.md). The structure is the product.
+
+Those three are **what you RUN**. There's a fourth, `packages/`, for **what you SHIP** — distributable artifacts served to _third parties_ (npm SDKs, embeddable widgets, CLIs), tagged `type:package`, depending on libs only, and **terminal** (nothing inside the repo imports them). Add it when you actually distribute something; delete it when you don't.
 
 Dependencies only ever point **down** (`apps` → `services` → `libs`); an arrow pointing up is the design smell the boundary rule rejects. This is the map your coding agent navigates instead of re-guessing every session.
 
@@ -56,11 +58,14 @@ See [`docs/portless.md`](./docs/portless.md) for the full convention.
 
 ## The map — three folders, defined by exposure
 
-| Folder          | Role                                                                | Served?                          |
-| --------------- | ------------------------------------------------------------------- | -------------------------------- |
-| **`apps/`**     | what humans see (web, landing, mobile)                              | public UI                        |
-| **`services/`** | what has a URL (api, ai-worker, payment)                            | served to other code             |
-| **`libs/`**     | shared code (ui, auth, db, ai, config, api-types, analytics, email) | **never served** — consumed only |
+| Folder          | Role                                                                     | Served?                                |
+| --------------- | ------------------------------------------------------------------------ | -------------------------------------- |
+| **`apps/`**     | what humans see (web, landing, mobile, **blog**)                         | public UI                              |
+| **`services/`** | what has a URL (api, ai-worker, payment)                                 | served to other code                   |
+| **`libs/`**     | shared code (ui, auth, db, ai, config, api-types, analytics, email, seo) | **never served** — consumed only       |
+| **`packages/`** | what you **ship** — distributables (widget; npm SDKs, CLIs)              | served to **third parties** — terminal |
+
+The first three are **what you RUN**; `packages/` is **what you SHIP** — a built artifact (`type:package`) that leaves the repo (published/embedded), depends on `libs/*` only, and that nothing internal imports.
 
 Two rules keep it honest (borrowed from Nx):
 
@@ -127,8 +132,9 @@ Almost all of it is real — it boots and proves the pattern end to end. Only a 
 - `apps/web` — Next.js, renders `@stack/ui`, live Better Auth login, type-safe calls to the API.
 - `apps/landing` — public marketing site: `@stack/ui` hero + sections, shared `<Analytics/>`, links to the app.
 - `apps/mobile` — real Expo/React Native starter rendering the shared `@stack/ui` tokens on native.
+- `apps/blog` — static MDX blog, the GEO showcase; passes the `check:seo` gate.
 - `services/api` — Hono + OpenAPI; validates against `@stack/api-types`, mounts Better Auth, ships server analytics.
-- `services/payment` — Creem adapter + Mock provider + tests; boots keyless.
+- `services/payment` — Creem + Dodo adapters (`PaymentProvider` + `resolveProvider`) + Mock provider + tests; boots keyless.
 - `services/ai-worker` — background worker (no URL).
 - `libs/ui` — shadcn components + shared tokens + Storybook.
 - `libs/db` — Drizzle (Postgres).
@@ -137,6 +143,8 @@ Almost all of it is real — it boots and proves the pattern end to end. Only a 
 - `libs/api-types` — the shared API contract (Zod schemas + inferred types), consumed by the API _and_ the web app.
 - `libs/analytics` — the `<Analytics/>` client provider **and** an isomorphic typed event catalog (`./events`) client and server share.
 - `libs/email` — Resend + React Email: typed, previewable templates + `sendEmail()`.
+- `libs/seo` — the one door for page metadata + JSON-LD + the AI-crawler robots allow-list; enforced by `check:seo`.
+- `packages/widget` — the worked example of the **4th bucket** (what you _ship_): an embeddable feedback widget that self-mounts into any third-party page. Real vanilla-DOM code, two build outputs (IIFE `<script src>` + ESM for npm), `bun:test`-pinned core, `type:package` (libs-only, terminal). Delete it if you distribute nothing.
 - the Tiltfile + Nx wiring + workspace plumbing.
 
 Everything above is **env-gated**: no keys → silent no-op, apps still boot.
@@ -150,9 +158,16 @@ Batteries-included, all **env-gated** (no keys → silent no-op, apps still boot
 - **Analytics** — PostHog (product analytics + session replay + error tracking, client _and_ server) and Microsoft Clarity. Client init is a single shared `@stack/analytics` `<Analytics/>` provider every app reuses; server capture is `posthog-node` in `services/api`. Cross-subdomain identity ties marketing-site visitors to signed-up users. See [`docs/analytics.md`](./docs/analytics.md).
 - **Email** — Resend + React Email (`@stack/email`): typed, previewable templates and a `sendEmail()` sender. On sign-up, Better Auth fires a `user_signed_up` event + a welcome email — the seed for a PostHog-driven drip. See [`docs/email.md`](./docs/email.md).
 
-## Compliance — enforced
+## Guardrails — enforced, not suggested
 
-The technical half of compliance ships as **gates that fail the build**, not docs that rot: accessibility is a lint gate (Oxlint `jsx-a11y`, `correctness: error`), secrets are scanned in CI (gitleaks), dependencies are scanned (Dependabot + osv-scanner), and analytics are **consent-gated** — `@stack/analytics` stays dormant until the user accepts the `<ConsentBanner/>` (GDPR, default off). The readiness maps: **[`docs/soc2-readiness.md`](./docs/soc2-readiness.md)** (SOC 2 Trust Service Criteria — what's wired vs. what you owe) and **[`docs/gdpr.md`](./docs/gdpr.md)** (consent, privacy, data-rights endpoints + the legal checklist). A template gives readiness, not a report.
+The parts most starters punt on with _"we'll add it later"_ ship here as **gates that fail the build**, not docs that rot:
+
+- **SEO/GEO enforced** — `@stack/seo` is the one door for page metadata; `check:seo` (in `bun run check` + CI) fails the build the moment a public page ships without metadata (or a public root goes `"use client"`), and the robots allow-list keeps AI crawlers welcome. → [`docs/writing-for-ai-search.md`](./docs/writing-for-ai-search.md)
+- **Accessibility enforced** — Oxlint `jsx-a11y` (`correctness: error`) turns an a11y regression into a lint/CI failure, not a review nit.
+- **Security / supply-chain** — secret scan (gitleaks) + dependency scan (Dependabot + osv-scanner) run in CI; third-party skills/MCPs go through the **vet-before-install** law + [`scripts/scan-skill.sh`](./scripts/scan-skill.sh) first-gate check before they touch your agent. → [`docs/agent-skills.md`](./docs/agent-skills.md)
+- **Compliance-ready** — analytics stay dormant behind `<ConsentBanner/>` (`@stack/analytics`, GDPR default-off), with `/privacy` + data-rights endpoints wired. Readiness maps, not a report: SOC 2 Trust Service Criteria + a GDPR checklist. → [`docs/soc2-readiness.md`](./docs/soc2-readiness.md), [`docs/gdpr.md`](./docs/gdpr.md)
+- **Swappable payments** — one `PaymentProvider` interface, Creem **and** Dodo adapters behind `resolveProvider`; changing provider is a one-file swap, not a rewrite. → [`docs/payments.md`](./docs/payments.md)
+- **A blog that's the GEO engine** — `apps/blog`, static MDX, is the worked showcase for writing pages an AI search index actually cites. → [`docs/writing-for-ai-search.md`](./docs/writing-for-ai-search.md)
 
 ## For your AI agent
 

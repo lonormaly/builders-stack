@@ -4,7 +4,8 @@
   "workspaces": [
     "apps/*",
     "services/*",
-    "libs/*"
+    "libs/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "echo 'Run ./tilt_up.sh (not tilt up) — Tilt owns dev servers, not Nx. See docs/nx.md for the Tilt-vs-Nx split.'",

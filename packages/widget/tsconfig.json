@@ -1,0 +1,8 @@
+{
+  "$comment": "Extends the single-source-of-truth base. Vanilla TS + DOM (no JSX) so the embed bundle is self-contained. `bun-types` for the bun:test file.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun-types"]
+  },
+  "include": ["src"]
+}

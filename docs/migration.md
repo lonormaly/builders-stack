@@ -26,7 +26,7 @@ Pulling a chunk of existing code into a new workspace package is the same recipe
    ```jsonc
    {
      "name": "@stack/db",
-     "exports": { ".": "./src/index.ts" }
+     "exports": { ".": "./src/index.ts" },
    }
    ```
 4. **Map the path** in `tsconfig.base.json` — the `./`-prefixed entry (there's no `baseUrl`; a bare `libs/…` throws TS5090, and Nx needs this path to resolve `@stack/*` for the boundary rule):
@@ -35,7 +35,7 @@ Pulling a chunk of existing code into a new workspace package is the same recipe
    ```
 5. **Tag it** for the boundary rule — `nx.tags` in the same `package.json`:
    ```jsonc
-   { "nx": { "tags": ["type:lib"] } }   // or type:service / type:app
+   { "nx": { "tags": ["type:lib"] } } // or type:service / type:app
    ```
 
 Then rewrite the imports at the call sites: `../../lib/db` becomes `@stack/db`. Because everything now enters through one door, that's a flat find-and-replace, not a path-chasing exercise.

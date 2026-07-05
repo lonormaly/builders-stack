@@ -1,0 +1,45 @@
+{
+  "name": "@stack/widget",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The worked example of the 4th bucket: a distributable embeddable widget served to THIRD PARTIES — a floating feedback button that self-mounts into any host page. Two build outputs: an IIFE (dist/widget.js) for <script src> embed on any site, and an ESM build for npm consumers. May import libs/* (shared code); never apps/services. Terminal — nothing internal consumes it.",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./widget.js": "./dist/widget.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bun run build:iife && bun run build:esm",
+    "build:iife": "esbuild src/embed.ts --bundle --format=iife --minify --outfile=dist/widget.js",
+    "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@stack/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.34",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.7.0"
+  },
+  "$publishConfig_comment": "EXAMPLE ONLY — this package is `private: true` and is NOT actually published. The `publishConfig`/`files`/`exports` above show the shape a real distributable takes: `bun publish` (drop `private`) would ship `dist/` (the built IIFE + ESM) to npm. `types` points at source for the example; a real publish adds `tsc --emitDeclarationOnly` to emit `dist/index.d.ts`.",
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  }
+}
