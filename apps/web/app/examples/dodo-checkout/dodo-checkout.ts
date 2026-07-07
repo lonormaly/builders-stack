@@ -165,7 +165,12 @@ export async function openDodoCheckoutInline(opts: {
     DodoPayments.Checkout.open({
       checkoutUrl, // raw session url — the SDK builds the /inline URL + embeds the iframe
       elementId, // REQUIRED for inline: id of the mounted <div> target
-      options: { showTimer: false, showSecurityBadge: true, manualRedirect: true, themeConfig: THEME },
+      options: {
+        showTimer: false,
+        showSecurityBadge: true,
+        manualRedirect: true,
+        themeConfig: THEME,
+      },
     });
   } catch (err) {
     // Any init/import/open failure → the caller falls back to hosted.

@@ -23,12 +23,12 @@ cd apps/web && bun x next dev
 
 ## Files
 
-| File | Role |
-|---|---|
-| `page.tsx` | Demo product card + "Buy now" → fetches a checkout URL, opens the modal |
+| File                                        | Role                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `page.tsx`                                  | Demo product card + "Buy now" → fetches a checkout URL, opens the modal                          |
 | `../../api/examples/dodo-checkout/route.ts` | Server route: creates the session, returns only `{ url }` — the API key never reaches the client |
-| `server-create-checkout.ts` | `dodopayments` SDK: session creation + demo product bootstrap |
-| `dodo-checkout.ts` | `dodopayments-checkout` SDK wrapper: inline mount, theming, event dispatch |
-| `CheckoutModal.tsx` | Self-contained modal: skeleton, stay-inline retry, success handling |
+| `server-create-checkout.ts`                 | `dodopayments` SDK: session creation + demo product bootstrap                                    |
+| `dodo-checkout.ts`                          | `dodopayments-checkout` SDK wrapper: inline mount, theming, event dispatch                       |
+| `CheckoutModal.tsx`                         | Self-contained modal: skeleton, stay-inline retry, success handling                              |
 
 The three reusable files are published as a standalone gist with the full write-up of the production gotchas (unreliable `form_ready`, the SDK singleton, `checkout.error` double meaning, literal-hex theming, and more): https://gist.github.com/lonormaly/df934d5340b887ff1d6d5d393b25ad54
