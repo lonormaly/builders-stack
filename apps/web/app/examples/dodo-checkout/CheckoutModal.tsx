@@ -57,7 +57,9 @@ export function CheckoutModal({
     // degrades to a plain redirect instead of a crash.
     if (!isDodoCheckoutUrl(checkoutUrl)) {
       redirectToHostedCheckout(checkoutUrl);
-      return () => {};
+      return () => {
+        // Redirected to the hosted page — nothing mounted here to tear down.
+      };
     }
 
     let cancelled = false;
