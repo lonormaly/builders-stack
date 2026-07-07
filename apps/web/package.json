@@ -14,8 +14,6 @@
     "@stack/seo": "workspace:*",
     "@stack/ui": "workspace:*",
     "better-auth": "^1.6.23",
-    "dodopayments": "^2.7.0",
-    "dodopayments-checkout": "^1.5.1",
     "next": "^16.2.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
