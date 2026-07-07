@@ -49,12 +49,6 @@ export function CheckoutModal({
   // decides whether a checkout.error is a FATAL pre-mount failure or a
   // RECOVERABLE in-form error (see onError below).
   const readyRef = useRef(false);
-  // Keep callback props in refs so the mount effect does NOT re-run every
-  // render. Parents typically pass fresh inline arrows each render — if the
-  // mount effect depended on them, it would re-mount the iframe on every
-  // render and the skeleton would pulse forever.
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
   // The native <dialog> element — showModal() gives a real focus trap + ::backdrop.
   const dialogRef = useRef<HTMLDialogElement>(null);
 
