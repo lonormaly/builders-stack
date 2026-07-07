@@ -10,6 +10,18 @@ import { resolveProvider, type WebhookEvent } from "./provider.js";
 const provider = resolveProvider();
 const app = new Hono();
 
+// Reject oversized bodies before parsing (cheap DoS guard) + baseline security headers.
+const MAX_BODY_BYTES = 1024 * 1024; // 1 MB
+app.use("*", async (c, next) => {
+  if (Number(c.req.header("content-length") ?? 0) > MAX_BODY_BYTES) {
+    return c.json({ error: "Payload too large" }, 413);
+  }
+  await next();
+  c.header("X-Content-Type-Options", "nosniff");
+  c.header("X-Frame-Options", "DENY");
+  c.header("Referrer-Policy", "no-referrer");
+});
+
 app.get("/health", (c) =>
   c.json({
     status: "ok",

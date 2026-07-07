@@ -56,6 +56,20 @@ export interface FeedbackPayload {
   at: string;
 }
 
+/**
+ * Guard the submit target: only fire at an https:// URL. The endpoint comes from a
+ * host-controlled `data-endpoint` / `mountFeedback({endpoint})`, so a hijacked page (or
+ * DOM XSS) could point it at an exfiltration URL — refuse anything that isn't HTTPS.
+ * Pure, so config.test.ts pins it.
+ */
+export function isValidEndpoint(url: string): boolean {
+  try {
+    return new URL(url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /** Build the wire payload. Pure — also pinned by the test. */
 export function buildPayload(
   message: string,

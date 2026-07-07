@@ -32,7 +32,11 @@ export const createPostRoute = createRoute({
   path: "/posts",
   tags: ["posts"],
   request: { body: { content: { "application/json": { schema: NewPostSchema } } } },
-  responses: { 201: json(PostSchema, "Created post") },
+  // authorId is set from the session server-side, never from the body (see index.ts).
+  responses: {
+    201: json(PostSchema, "Created post"),
+    401: json(ErrorSchema, "Unauthorized"),
+  },
 });
 
 export const getRoute = createRoute({
@@ -51,7 +55,12 @@ export const patchRoute = createRoute({
     params: IdParam,
     body: { content: { "application/json": { schema: PatchPostSchema } } },
   },
-  responses: { 200: json(PostSchema, "Updated post"), 404: json(ErrorSchema, "Not found") },
+  responses: {
+    200: json(PostSchema, "Updated post"),
+    401: json(ErrorSchema, "Unauthorized"),
+    403: json(ErrorSchema, "Forbidden — not the author"),
+    404: json(ErrorSchema, "Not found"),
+  },
 });
 
 export const deleteRoute = createRoute({
@@ -59,7 +68,12 @@ export const deleteRoute = createRoute({
   path: "/posts/{id}",
   tags: ["posts"],
   request: { params: IdParam },
-  responses: { 204: { description: "Deleted" }, 404: json(ErrorSchema, "Not found") },
+  responses: {
+    204: { description: "Deleted" },
+    401: json(ErrorSchema, "Unauthorized"),
+    403: json(ErrorSchema, "Forbidden — not the author"),
+    404: json(ErrorSchema, "Not found"),
+  },
 });
 
 // ---- data access (idiomatic Drizzle; @stack/db provides db + schema) ----

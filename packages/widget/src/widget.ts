@@ -1,6 +1,6 @@
 // The DOM layer — mounts a floating launcher + a tiny feedback popover into the
 // host page. Vanilla DOM, zero framework, so the IIFE bundle drops into ANY site.
-import { buildPayload, resolveConfig, type WidgetOptions } from "./config";
+import { buildPayload, resolveConfig, isValidEndpoint, type WidgetOptions } from "./config";
 
 const ROOT_ID = "stack-widget-root";
 
@@ -51,12 +51,13 @@ export function mountFeedback(options: WidgetOptions = {}): void {
     e.preventDefault();
     const payload = buildPayload(input.value, location.href);
     if (!payload.message) return;
-    if (cfg.endpoint) {
+    if (cfg.endpoint && isValidEndpoint(cfg.endpoint)) {
       // Fire-and-forget; keepalive lets it survive a navigation.
       void fetch(cfg.endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "omit", // explicit: never send cookies to a host-controlled endpoint.
         keepalive: true,
       }).catch(() => undefined);
     }

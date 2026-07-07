@@ -22,14 +22,14 @@ export const PostSchema = z
   })
   .openapi("Post");
 
+// authorId is NOT in the write contract — it's derived server-side from the session
+// (see services/api create handler). Accepting it from the client is broken object-level
+// auth (BOLA): a caller could forge posts as any user. .max() bounds prevent unbounded
+// text writes bloating Postgres past the request body cap.
 export const NewPostSchema = z
   .object({
-    title: z.string().min(1),
-    body: z.string().min(1),
-    authorId: z
-      .string()
-      .min(1)
-      .openapi({ example: "u_abc123", description: "id of an existing user" }),
+    title: z.string().min(1).max(255),
+    body: z.string().min(1).max(100_000),
   })
   .openapi("NewPost");
 

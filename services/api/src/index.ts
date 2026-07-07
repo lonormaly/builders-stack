@@ -22,7 +22,34 @@ import {
   toApi,
 } from "./posts.js";
 
+// Refuse to start with an unset auth secret outside dev: an empty secret signs sessions
+// with a blank key — trivially forgeable. Import-time "" fallback stays (build/typecheck),
+// runtime is guarded here.
+if (process.env.NODE_ENV !== "development" && !process.env.BETTER_AUTH_SECRET) {
+  console.error("[api] FATAL: BETTER_AUTH_SECRET is not set. Refusing to start.");
+  process.exit(1);
+}
+
 const app = new OpenAPIHono();
+
+// Reject oversized bodies before parsing — a large JSON payload is a cheap DoS vector.
+const MAX_BODY_BYTES = 1024 * 1024; // 1 MB
+app.use("*", async (c, next) => {
+  if (Number(c.req.header("content-length") ?? 0) > MAX_BODY_BYTES) {
+    return c.json({ error: "Payload too large" }, 413);
+  }
+  await next();
+});
+
+// Baseline security response headers on every route. No CSP here — a real CSP needs a
+// per-app nonce + allowlist (PostHog, Clarity, Tailwind) and belongs in each Next app;
+// these are the zero-risk headers that apply uniformly to an API origin.
+app.use("*", async (c, next) => {
+  await next();
+  c.header("X-Content-Type-Options", "nosniff");
+  c.header("X-Frame-Options", "DENY");
+  c.header("Referrer-Policy", "no-referrer");
+});
 
 // CORS so the web app can call /api/auth + protected routes WITH cookies. The origin
 // comes from the typed env door (@stack/config) — declared once, no inline default here.
@@ -64,10 +91,14 @@ app.post("/me/delete", async (c) => {
 });
 
 // --- posts CRUD ---
+// Reads are public; writes require a session and are scoped to the author. authorId is
+// ALWAYS derived from the session, never the body — accepting it from the client is BOLA.
 app
   .openapi(listRoute, async (c) => c.json((await repo.list()).map(toApi), 200))
   .openapi(createPostRoute, async (c) => {
-    const created = await repo.create(c.req.valid("json"));
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: "Unauthorized" }, 401);
+    const created = await repo.create({ ...c.req.valid("json"), authorId: session.user.id });
     return c.json(toApi(created), 201);
   })
   .openapi(getRoute, async (c) => {
@@ -75,10 +106,20 @@ app
     return post ? c.json(toApi(post), 200) : c.json({ error: "Not found" }, 404);
   })
   .openapi(patchRoute, async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: "Unauthorized" }, 401);
+    const existing = await repo.get(c.req.valid("param").id);
+    if (!existing) return c.json({ error: "Not found" }, 404);
+    if (existing.authorId !== session.user.id) return c.json({ error: "Forbidden" }, 403);
     const updated = await repo.update(c.req.valid("param").id, c.req.valid("json"));
     return updated ? c.json(toApi(updated), 200) : c.json({ error: "Not found" }, 404);
   })
   .openapi(deleteRoute, async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: "Unauthorized" }, 401);
+    const existing = await repo.get(c.req.valid("param").id);
+    if (!existing) return c.json({ error: "Not found" }, 404);
+    if (existing.authorId !== session.user.id) return c.json({ error: "Forbidden" }, 403);
     const ok = await repo.remove(c.req.valid("param").id);
     return ok ? c.body(null, 204) : c.json({ error: "Not found" }, 404);
   });

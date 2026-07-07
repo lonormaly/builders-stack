@@ -1,6 +1,6 @@
 // bun:test — pins the widget's pure core (config merge + payload shape). No DOM.
 import { describe, expect, test } from "bun:test";
-import { buildPayload, DEFAULTS, resolveConfig } from "./config";
+import { buildPayload, DEFAULTS, isValidEndpoint, resolveConfig } from "./config";
 
 describe("resolveConfig", () => {
   test("empty options → all defaults (color from @stack/ui tokens)", () => {
@@ -17,6 +17,16 @@ describe("resolveConfig", () => {
 
   test("position is honored", () => {
     expect(resolveConfig({ position: "bottom-left" }).position).toBe("bottom-left");
+  });
+});
+
+describe("isValidEndpoint", () => {
+  test("accepts https, rejects http / non-URL / other protocols", () => {
+    expect(isValidEndpoint("https://api.example.com/feedback")).toBe(true);
+    expect(isValidEndpoint("http://evil.example.com")).toBe(false); // plaintext
+    expect(isValidEndpoint("javascript:alert(1)")).toBe(false);
+    expect(isValidEndpoint("not a url")).toBe(false);
+    expect(isValidEndpoint("")).toBe(false);
   });
 });
 
