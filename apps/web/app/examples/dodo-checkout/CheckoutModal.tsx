@@ -55,6 +55,8 @@ export function CheckoutModal({
   // render and the skeleton would pulse forever.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  // The native <dialog> element — showModal() gives a real focus trap + ::backdrop.
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const mount = useCallback(() => {
     // Guard: the inline SDK throws on non-Dodo hosts. A mis-wired URL
@@ -134,27 +136,34 @@ export function CheckoutModal({
     return mount();
   }, [mount, attempt]);
 
-  // Escape closes. Listener uses the ref so it never re-binds per render.
+  // Open as a true modal: top layer, focus trap, and native Escape handling
+  // (fires `cancel` — routed to onClose below), so no manual keydown listener.
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseRef.current();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    const el = dialogRef.current;
+    if (el && !el.open) el.showModal();
+    return () => el?.close();
   }, []);
 
   return (
-    // Overlay — click on the backdrop (not the panel) closes.
-    <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
+    // Native <dialog> is the overlay: semantic, so no role/keyboard shims. Dismissal
+    // is via Escape (native → onCancel) and the × button — deliberately NOT the
+    // backdrop, so a stray click can't drop a customer mid-payment.
+    <dialog
+      ref={dialogRef}
       aria-label="Secure checkout"
+      onCancel={(e) => {
+        e.preventDefault(); // route Escape through onClose, don't self-close
+        onClose();
+      }}
       style={{
         position: "fixed",
         inset: 0,
+        width: "100vw",
+        height: "100vh",
+        maxWidth: "100vw",
+        maxHeight: "100vh",
+        margin: 0,
+        border: "none",
         zIndex: 50,
         display: "flex",
         alignItems: "center",
@@ -199,7 +208,10 @@ export function CheckoutModal({
 
         {/* Skeleton loader — pulsing bars, hidden once ready or failed. */}
         {!ready && !failed && (
-          <div aria-hidden style={{ display: "flex", flexDirection: "column", gap: 12, padding: "16px 0" }}>
+          <div
+            aria-hidden
+            style={{ display: "flex", flexDirection: "column", gap: 12, padding: "16px 0" }}
+          >
             {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
@@ -221,7 +233,17 @@ export function CheckoutModal({
             the manual link is a user-initiated escape, never an automatic
             redirect. */}
         {failed && (
-          <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "32px 0", textAlign: "center" }}>
+          <div
+            role="alert"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+              padding: "32px 0",
+              textAlign: "center",
+            }}
+          >
             <p style={{ margin: 0, fontSize: 14, color: "#666" }}>
               Loading secure checkout&hellip; Taking longer than expected.
             </p>
@@ -264,7 +286,7 @@ export function CheckoutModal({
           style={{ minHeight: ready ? height : 0, transition: "min-height 0.4s ease" }}
         />
       </div>
-    </div>
+    </dialog>
   );
 }
 
