@@ -28,9 +28,7 @@ export default [
   ...nx.configs["flat/base"],
   ...nx.configs["flat/typescript"],
   ...nx.configs["flat/javascript"],
-  {
-    /* @nx/enforce-module-boundaries config */
-  },
+  {/* @nx/enforce-module-boundaries config */},
   // LAST: read .oxlintrc.json and turn OFF every ESLint rule Oxlint already owns.
   ...oxlint.buildFromOxlintConfigFile(oxlintConfigPath),
 ];
