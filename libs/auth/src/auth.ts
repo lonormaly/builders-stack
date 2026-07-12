@@ -27,6 +27,24 @@ export const auth = betterAuth({
     enabled: true,
   },
 
+  // Session cookie-cache — ON by default. `getSession` runs on nearly every request;
+  // without this it's a Postgres round-trip each time, which pins Neon compute awake and
+  // burns the free tier's CU-hours (the dominant drain, learned the hard way in prod).
+  // The session is cached in a signed, short-TTL cookie and trusted without a DB read
+  // until it expires; the DB is touched only on cache miss. TTL = 5 min, so server-side
+  // revocation (logout-everywhere, ban) lags at most that window — do sensitive checks
+  // (entitlements/roles) against the DB directly, not off the cached session.
+  // Don't extend the TTL to "save more DB": it's a revocation dial, not a cost dial, and an
+  // idle client makes zero requests anyway (compute suspends regardless). To take session
+  // reads off Postgres entirely, add Better Auth `secondaryStorage` (Cloudflare Workers KV
+  // / DO) — see agents/skills/run-lean-on-neon.
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // seconds
+    },
+  },
+
   // Better Auth's current hook API. `user.create.after` fires once a user row is
   // persisted (email/password OR social) — the single choke point where every
   // sign-up routes through, so the drip seed lives here, not per-provider.
