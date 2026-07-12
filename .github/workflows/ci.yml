@@ -58,15 +58,18 @@ jobs:
       - name: Boundaries · typecheck · test · build (affected only)
         run: bunx nx affected -t lint typecheck test build
 
-  # COMPLIANCE — dependency vulnerability scan (SOC2 CC7.1 / vuln mgmt). The osv-scanner
-  # GitHub Action (Google's OSV database). Runs as its own job so a vuln finding is a
-  # distinct, visible gate. NOTE: bun 1.1.x ships a BINARY bun.lockb that OSV can't parse,
-  # so JS-dependency coverage here is limited until bun's text lockfile (1.2+) — Dependabot
-  # (.github/dependabot.yml) is the primary JS dep-update/alert mechanism. OSV still gates
-  # GitHub Actions pins, Dockerfiles, and any text lockfiles. See docs/soc2-readiness.md.
+  # COMPLIANCE — dependency vulnerability scan (SOC2 CC7.1 / vuln mgmt, Google's OSV
+  # database). Its own job so a vuln finding is a distinct, visible gate. Runs the
+  # osv-scanner CLI directly instead of the reusable workflow: the reusable one always
+  # uploads SARIF to GitHub Code Scanning, which needs **Advanced Security** (a paid org
+  # feature) and hard-fails even when the scan is clean. The CLI gate is identical — it
+  # auto-discovers osv-scanner.toml (ignore list) and exits non-zero on un-ignored vulns.
+  # bun's TEXT lockfile (bun.lock, since the 1.3.12 migration) is fully OSV-parseable.
   vuln-scan:
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8"
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
-      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: OSV vuln-scan
+        run: docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/google/osv-scanner:v2.2.4 scan -r ./
