@@ -2,7 +2,8 @@ import { createAuthClient } from "better-auth/react";
 
 // baseURL = the API origin. Better Auth appends its default basePath (/api/auth),
 // so requests land on @stack/api's /api/auth/* handler. Configurable, local default.
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+// Exported so the social popup flow can POST /sign-in/social directly (see auth/page.tsx).
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export const authClient = createAuthClient({
   baseURL: API_URL,
@@ -12,4 +13,4 @@ export const authClient = createAuthClient({
   fetchOptions: { credentials: "include" },
 });
 
-export const { signIn, signUp, signOut, useSession } = authClient;
+export const { signIn, signUp, signOut, useSession, getSession } = authClient;
