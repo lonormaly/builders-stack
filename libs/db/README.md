@@ -31,3 +31,21 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/builders_stack
 | `bun run typecheck` | `tsc --noEmit`.                                                                   |
 
 Typical local flow: `push` → `seed`. Versioned flow: `generate` → `migrate` → `seed`.
+
+## Performance, indexing & the free tier — use the `dba` agent
+
+Schema design and DB performance have a dedicated **`dba` subagent** ([`agents/subagents.md`](../../agents/subagents.md)) and three skills. Spawn/read them when you touch the DB — the rules below are the short version.
+
+| Skill                                                               | Use it to                                                        |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`design-a-schema`](../../agents/skills/design-a-schema/SKILL.md)   | model a table — normalize, constrain, and **index deliberately** |
+| [`optimize-a-query`](../../agents/skills/optimize-a-query/SKILL.md) | read an `EXPLAIN` plan, kill an ORM N+1, add the right index     |
+| [`run-lean-on-neon`](../../agents/skills/run-lean-on-neon/SKILL.md) | stay fast under load and inside Neon's free tier                 |
+
+**The rules that matter most:**
+
+- **Drizzle is the only migration path.** Edit `src/schema.ts` → `bun run generate` → **review the SQL** → never hand-write it. Flag any `DROP`/rename.
+- **Index every foreign key you query on** — Postgres does _not_ auto-index FKs, and a missing one is the classic "fine in dev, dies under load" bug. But don't over-index: each index costs writes + storage against Neon's 0.5 GB cap.
+- **Under load, use Neon's pooled (`-pooler`) connection string** for the app; the direct one only for migrations. Connection storms — not WAL tuning — are what crash serverless Postgres.
+- **Don't reach for `postgresql.conf` / PgTune** — Neon manages it; that advice is for self-hosted Postgres. What you _can_ tune is session GUCs (`work_mem`, `statement_timeout`) — see `run-lean-on-neon`.
+- **Session cookie-cache is ON by default** in [`libs/auth`](../auth) so auth doesn't hit this DB on every request — the biggest Neon-compute saver. And **never poll/keepalive the DB** ("push, don't poll") so idle compute scales to zero.

@@ -21,8 +21,8 @@ Below is one entry per tool, in the layer order the stack uses — hosting → d
 - **What it is:** Fully-managed serverless Postgres that separates storage from compute.
 - **Why we chose it:** Real managed Postgres with two things a plain database doesn't give you — **Git-style branching** (instant copy-on-write branches, so every PR can get its own preview DB against a copy of prod) and **scale-to-zero** (an idle database costs nothing). Any Postgres works with `@stack/db`; Neon is just the easy hosted default that autoscales instead of you sizing an instance.
 - **What you get free:** 0.5 GB storage, 100 compute-hours/month, ~100 projects × 10 branches, 6-hour point-in-time restore window.
-- **Watch:** scale-to-zero adds a ~0.3–1s cold start on the first query after idle; an always-on app burns the monthly compute allotment in roughly a week.
-- **In this repo:** `libs/db` (Drizzle ORM — one ORM only). `DATABASE_URL` has a local default so a fresh clone boots against local Postgres; point it at your Neon connection string for prod/preview. See [`docs/deploy.md`](./deploy.md).
+- **Watch:** scale-to-zero adds a ~0.3–1s cold start on the first query after idle; the **compute (CU-hours) allotment is the real ceiling**, and anything that pins compute awake burns it — an always-on/polled DB drains the month in roughly a week.
+- **In this repo:** `libs/db` (Drizzle ORM — one ORM only). `DATABASE_URL` has a local default so a fresh clone boots against local Postgres; point it at your Neon connection string for prod/preview. To hold the free tier under real traffic the stack ships **session cookie-caching on by default** (`libs/auth` — auth stops hitting the DB per request, the dominant compute drain) and a **`dba` agent + DB skills**; the "don't poll the DB" rule lets idle compute scale to zero. See [`agents/skills/run-lean-on-neon`](../agents/skills/run-lean-on-neon/SKILL.md) and [`docs/deploy.md`](./deploy.md).
 
 ## Better Auth — self-hosted TypeScript auth
 
