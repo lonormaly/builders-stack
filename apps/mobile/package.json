@@ -20,7 +20,7 @@
   "devDependencies": {
     "@babel/core": "^8.0.1",
     "@types/react": "~19.2.17",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "nx": {
     "tags": [
