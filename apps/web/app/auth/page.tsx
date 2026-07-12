@@ -28,6 +28,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
+  const [socialPending, setSocialPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
@@ -54,6 +55,7 @@ export default function AuthPage() {
   // @stack/ui primitives + the "stack-oauth-done" channel).
   async function onSocial() {
     setError(null);
+    setSocialPending(true);
 
     // Open a blank popup synchronously inside the click gesture — desktop keeps the
     // user on the sign-in page while the provider loads in the popup. Mobile browsers
@@ -96,18 +98,30 @@ export default function AuthPage() {
             setError(ctx.error.message ?? "Something went wrong."),
         },
       );
+      setSocialPending(false);
       return;
     }
 
     if (popup) {
-      // Desktop popup flow: the callback page broadcasts "done"; we revalidate the
-      // session (no full reload) so the useSession gate swaps in the signed-in view.
-      const bc = new BroadcastChannel("stack-oauth-done");
-      bc.onmessage = () => {
+      // Desktop popup flow. Two ways we learn OAuth finished, whichever fires first:
+      // (1) the callback page broadcasts "done"; (2) we poll popup.closed as a backstop
+      // for a missed broadcast. Either way we refetch the session (no full reload) so
+      // the useSession gate swaps in the signed-in view. socialPending keeps the button
+      // in "Signing you in…" until the session lands.
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
         bc.close();
+        clearInterval(poll);
         void getSession();
         router.push("/");
       };
+      const bc = new BroadcastChannel("stack-oauth-done");
+      bc.onmessage = finish;
+      const poll = setInterval(() => {
+        if (popup.closed) finish();
+      }, 500);
       popup.location.href = url;
     } else {
       // Popup blocked (mobile): full-page redirect. The callback page has no opener,
@@ -129,8 +143,14 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <Button type="button" variant="outline" className="w-full" onClick={onSocial}>
-              Continue with GitHub
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={onSocial}
+              disabled={socialPending}
+            >
+              {socialPending ? "Signing you in…" : "Continue with GitHub"}
             </Button>
             <div className="flex items-center gap-3">
               <span className="h-px flex-1 bg-border" />
