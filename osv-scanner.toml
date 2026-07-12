@@ -1,0 +1,96 @@
+# osv-scanner ignore list. Only PRE-EXISTING, transitive, dev-only advisories with no
+# cheap fix belong here — each needs a reason + a review date. Runtime deps get fixed,
+# not ignored. See AGENTS.md "vuln-scan".
+#
+# Every entry below was traced to its real parent in bun.lock and confirmed build-time
+# only (dev CLI / codegen / toolchain), never in a deployed Worker or client bundle.
+# The runtime app resolves the SAFE versions (better-auth@1.6.23, drizzle-orm@0.45.2,
+# esbuild@0.28.1); the flagged copies are isolated under dev tooling that pins them.
+
+# --- better-auth 1.4.21 (9 advisories) — @better-auth/cli devDep only ---
+# @better-auth/cli@1.4.21 is the LATEST published cli and internally pins
+# better-auth@1.4.21. It's a devDependency (libs/auth `auth:generate` schema codegen),
+# never bundled. The deployed app uses better-auth@1.6.23. No cheap fix: the cli has no
+# 1.6.x release. Revisit when @better-auth/cli ships a version tracking the runtime.
+[[IgnoredVulns]]
+id = "GHSA-2vg6-77g8-24mp" # stale sessions after user deletion
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-392p-2q2v-4372" # OAuth refresh-token family fork
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-7w99-5wm4-3g79" # oauth-provider auth-code grant
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-86j7-9j95-vpqj" # stored XSS via javascript: redirect
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-9h47-pqcx-hjr4" # insecure oidcProvider crypto defaults
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-fmh4-wcc4-5jm3" # unauthorized invitation acceptance
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-g38m-r43w-p2q7" # account takeover via OAuth auto-link
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-pw9m-5jxm-xr6h" # OAuth refresh-token replay
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-wxw3-q3m9-c3jr" # OAuth callback mismatched state
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+
+# --- drizzle-orm 0.41.0 — @better-auth/cli devDep only ---
+# Same @better-auth/cli pins drizzle-orm@^0.41.0 internally. Runtime uses
+# drizzle-orm@0.45.2 (libs/db). Build-time codegen path only.
+[[IgnoredVulns]]
+id = "GHSA-gpj5-g38j-94v9" # SQL injection via unescaped identifiers
+ignoreUntil = 2026-10-01
+reason = "Transitive drizzle-orm@0.41.0 under @better-auth/cli (devDep, build-time codegen only). Runtime uses drizzle-orm@0.45.2. cli pins the old copy; no cheap bump."
+
+# --- esbuild 0.18.20 — deprecated @esbuild-kit chain under drizzle-kit ---
+# drizzle-kit@0.31.10 (devDep, migrations) → @esbuild-kit/esm-loader →
+# @esbuild-kit/core-utils, which pins esbuild ~0.18.20. Build-time only, never deployed.
+# Runtime bundler uses esbuild@0.28.1. Same advisory ignored in krispyai-cloud.
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99" # esbuild dev-server request smuggling
+ignoreUntil = 2026-10-01
+reason = "Transitive esbuild@0.18.20 via deprecated @esbuild-kit/core-utils under drizzle-kit (devDep, build-time only). Runtime uses esbuild@0.28.1. Pinned upstream; not cheaply dedupable."
+
+# --- postcss 8.4.31 — bundled inside next ---
+[[IgnoredVulns]]
+id = "GHSA-qx2v-qp2m-jg93" # postcss </style> stringify XSS
+ignoreUntil = 2026-10-01
+reason = "postcss@8.4.31 is pinned inside next itself (next/postcss); build-time only. Bumping requires a Next upgrade, out of scope for this PR. Revisit on the next Next bump. (Also ignored in krispyai-cloud.)"
+
+# --- lodash 4.17.21 — chevrotain transitive, UNFIXABLE ---
+# lodash@4.17.21 is pinned exactly by chevrotain@10.5.0 (a parser lib, deep transitive).
+# The OSV "fixed" version 4.18.0 does NOT exist on npm — 4.17.21 is lodash's last release.
+# There is no upgrade target; these are permanently unfixable until chevrotain drops lodash.
+[[IgnoredVulns]]
+id = "GHSA-f23m-r3pf-42rh" # prototype pollution _.unset array path
+ignoreUntil = 2026-10-01
+reason = "Transitive lodash@4.17.21 pinned by chevrotain@10.5.0 (build-time parser). OSV 'fix' 4.18.0 is unpublished — no upgrade exists. Never in a deployed bundle."
+[[IgnoredVulns]]
+id = "GHSA-r5fr-rjxr-66jc" # code injection via _.template
+ignoreUntil = 2026-10-01
+reason = "Transitive lodash@4.17.21 pinned by chevrotain@10.5.0 (build-time parser). OSV 'fix' 4.18.0 is unpublished — no upgrade exists. Never in a deployed bundle."
+[[IgnoredVulns]]
+id = "GHSA-xxjr-mmjv-4gpg" # prototype pollution _.unset / _.omit
+ignoreUntil = 2026-10-01
+reason = "Transitive lodash@4.17.21 pinned by chevrotain@10.5.0 (build-time parser). OSV 'fix' 4.18.0 is unpublished — no upgrade exists. Never in a deployed bundle."
+
+# --- uuid 7.0.3 — xcode transitive (Expo/RN tooling) ---
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq" # missing buffer bounds check v3/v5/v6
+ignoreUntil = 2026-10-01
+reason = "Transitive uuid@7.0.3 pinned by xcode@3.0.1 (Expo/React-Native build tooling, ^7.0.3). Build-time only, never in a deployed bundle. Not cheaply dedupable."
