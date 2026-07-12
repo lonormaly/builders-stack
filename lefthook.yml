@@ -1,8 +1,7 @@
 # Git hooks — the commit-boundary version of the boundary thesis. The two laws are
 # enforced in `lint` (Nx) and in review; this stops drift one step earlier: an agent
-# (or human) literally can't COMMIT unformatted / unlinted code, and can't PUSH code
-# that doesn't typecheck. Fast by construction — staged files only on commit, the
-# Nx-affected graph only on push.
+# (or human) literally can't COMMIT unformatted / unlinted code. Fast by construction —
+# staged files only on commit; the pre-push gate is a sub-second SEO regex, nothing slow.
 #
 # Enable once after `bun install`:  bunx lefthook install
 # Skip in a pinch:                  LEFTHOOK=0 git commit …   (or `git commit --no-verify`)
@@ -20,13 +19,16 @@ pre-commit:
       glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
       run: bunx oxlint {staged_files}
 
+# NO pre-push typecheck — deliberately. There WAS a `bunx nx affected -t typecheck` here;
+# it was removed 2026-07-12 after repeated incidents in downstream clones: `nx affected` +
+# the Nx daemon deadlocked 10+ min on worktree pushes, and a daemonless `run-many` still
+# took 5+ min on a cold cache. A minutes-long push gate trains people to `--no-verify`,
+# which is worse than no gate. Typecheck coverage lives in CI (ci.yml runs
+# `nx affected -t lint typecheck test build` on every push/PR within minutes) and in
+# editors. Don't re-add a pre-push typecheck unless it's provably sub-30s cold from a
+# fresh worktree. The sub-second SEO regex below stays — it's cheap and catches drift.
 pre-push:
   commands:
-    # Typecheck only the projects the push affects (Nx graph + cache).
-    # Guard: skip on the very FIRST push (no upstream ref to diff against yet) so a
-    # fresh repo or clone never hangs typechecking all projects cold. CI still runs it.
-    typecheck:
-      run: git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1 && bunx nx affected -t typecheck || echo "→ no upstream yet — skipping pre-push typecheck (CI runs it)"
     # SEO/GEO drift gate — fails the push if a public page lacks metadata or is
     # client-rendered, or an app is missing robots.ts/sitemap.ts. Fast (regex over
     # apps/*/app), no Nx graph needed. Same check runs in `bun run check` + CI.
