@@ -10,6 +10,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@stack/observability": "workspace:*",
     "hono": "^4.6.0",
     "zod": "^4.4.3"
   },

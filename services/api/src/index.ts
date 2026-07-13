@@ -12,6 +12,7 @@ import { auth } from "@stack/auth";
 import { db, user, eq } from "@stack/db";
 import { getEnv } from "@stack/config";
 import { captureServerException } from "./analytics.js";
+import { reportError } from "@stack/observability";
 import {
   listRoute,
   createPostRoute,
@@ -131,10 +132,11 @@ app.doc("/openapi.json", {
 });
 app.get("/docs", swaggerUI({ url: "/openapi.json" }));
 
-// --- error tracking: ship uncaught route errors to PostHog (no-op without a key) ---
+// --- error tracking: uncaught route errors → PostHog (product) + Better Stack (ops).
+// Both no-op without their key/token; reportError also writes the stderr line. ---
 app.onError((err, c) => {
   captureServerException(err);
-  console.error("[api] unhandled error", err);
+  reportError(err, { service: "api", path: c.req.path });
   return c.json({ error: "Internal Server Error" }, 500);
 });
 

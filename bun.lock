@@ -197,6 +197,13 @@
         "react-email": "^6.6.5",
       },
     },
+    "libs/observability": {
+      "name": "@stack/observability",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+      },
+    },
     "libs/seo": {
       "name": "@stack/seo",
       "version": "0.0.0",
@@ -275,6 +282,7 @@
         "@stack/analytics": "workspace:*",
         "@stack/api-types": "workspace:*",
         "@stack/config": "workspace:*",
+        "@stack/observability": "workspace:*",
         "hono": "^4.6.0",
         "posthog-node": "^5.39.2",
         "zod": "^4.4.3",
@@ -288,6 +296,7 @@
       "name": "@stack/payment",
       "version": "0.0.0",
       "dependencies": {
+        "@stack/observability": "workspace:*",
         "hono": "^4.6.0",
         "zod": "^4.4.3",
       },
@@ -1378,6 +1387,8 @@
     "@stack/landing": ["@stack/landing@workspace:apps/landing"],
 
     "@stack/mobile": ["@stack/mobile@workspace:apps/mobile"],
+
+    "@stack/observability": ["@stack/observability@workspace:libs/observability"],
 
     "@stack/payment": ["@stack/payment@workspace:services/payment"],
 

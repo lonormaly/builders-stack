@@ -6,6 +6,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { resolveProvider, type WebhookEvent } from "./provider.js";
+import { reportError } from "@stack/observability";
 
 const provider = resolveProvider();
 const app = new Hono();
@@ -45,7 +46,7 @@ app.post("/checkout", async (c) => {
     const session = await provider.createCheckout(parsed.data);
     return c.json(session, 201);
   } catch (err) {
-    console.error("[payment] checkout error:", err);
+    reportError(err, { service: "payment", route: "checkout" });
     return c.json({ error: "Checkout failed" }, 502);
   }
 });

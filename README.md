@@ -209,6 +209,7 @@ The parts most starters punt on with _"we'll add it later"_ ship here as **gates
 - **Security / supply-chain** — secret scan (gitleaks) + dependency scan (Dependabot + osv-scanner) run in CI; third-party skills/MCPs go through the **vet-before-install** law + [`scripts/scan-skill.sh`](./scripts/scan-skill.sh) first-gate check before they touch your agent. → [`docs/stack/agent-skills.md`](./docs/stack/agent-skills.md)
 - **Compliance-ready** — analytics stay dormant behind `<ConsentBanner/>` (`@stack/analytics`, GDPR default-off), with `/privacy` + data-rights endpoints wired. Readiness maps, not a report: SOC 2 Trust Service Criteria + a GDPR checklist. → [`docs/soc2-readiness.md`](./docs/soc2-readiness.md), [`docs/gdpr.md`](./docs/gdpr.md)
 - **Swappable payments** — one `PaymentProvider` interface, Creem **and** Dodo adapters behind `resolveProvider`; changing provider is a one-file swap, not a rewrite. → [`docs/stack/payments.md`](./docs/stack/payments.md)
+- **Monitoring** — Better Stack uptime checks point at the services' existing `/health` (no code), plus a public status page + on-call alerting; an env-gated in-app log drain (`@stack/observability`) ships uncaught errors to Better Stack Logs. → [`docs/monitoring.md`](./docs/monitoring.md)
 - **A blog that's the GEO engine** — `apps/blog`, static MDX, is the worked showcase for writing pages an AI search index actually cites. → [`docs/writing-for-ai-search.md`](./docs/writing-for-ai-search.md)
 
 ## For your AI agent

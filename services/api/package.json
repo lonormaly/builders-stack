@@ -14,6 +14,7 @@
     "@stack/analytics": "workspace:*",
     "@stack/api-types": "workspace:*",
     "@stack/config": "workspace:*",
+    "@stack/observability": "workspace:*",
     "hono": "^4.6.0",
     "posthog-node": "^5.39.2",
     "zod": "^4.4.3"
