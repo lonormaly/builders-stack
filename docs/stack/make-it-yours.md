@@ -124,4 +124,24 @@ git rm -r --cached docs/stack && echo 'docs/stack/' >> .gitignore
 
 The files stay right where they are locally — `--cached` only removes them from
 the index — but they stop being tracked, so they won't show up in your fork's
-history or diffs. Delete the folder outright if you don't want it around at all.
+history or diffs. Delete the folder outright (`git rm -r docs/stack`) if you don't
+want it around at all.
+
+**One loose end this leaves — for the agent running this step:** other tracked
+files still link into `docs/stack/` (README, CLAUDE.md, AGENTS.md, CONTRIBUTING,
+SECURITY, a few `# see docs/stack/…` code comments). After stripping, those point
+at files that are no longer in the repo's history — fine for you locally (the files
+are still on disk), but a teammate who clones your stripped repo gets dead links.
+So once you've stripped, **grep for the leftover references and clean them up as
+fits each file** — you don't need a rigid script:
+
+```sh
+git grep -l "docs/stack/" -- ':!docs/stack'
+```
+
+- **Front-door files** (README, CLAUDE.md, AGENTS.md, CONTRIBUTING, SECURITY) you're
+  rewriting for your product anyway — drop or repoint the `docs/stack` links as you do.
+- **Incidental code comments** (`.env.example`, `.tool-versions`, `eslint.config.mjs`,
+  `libs/ai/README.md`, …) — just delete the now-stale `see docs/stack/…` pointer.
+
+Handle it however you see fit; the point is to not leave dangling references behind.
