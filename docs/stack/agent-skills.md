@@ -2,7 +2,7 @@
 
 Agent skills (Claude Code skills, Cursor rules, MCP servers, hook bundles) are **executable code you hand your agent, running with your agent's permissions**. A skill can read your repo, run shell, and phone home. The same supply-chain caution you'd apply to an npm dependency applies here — more so, because a skill's payload is prose the model _obeys_, so a malicious one doesn't need an exploit, just a convincing instruction.
 
-This repo's posture: **reinvent nothing worth reusing, vendor nothing untrusted, gate everything.** We already swapped the archived, SQL-injectable `@modelcontextprotocol/server-postgres` for a read-only `postgres-mcp --access-mode=restricted` (see [`SECURITY.md`](../SECURITY.md)) — that's the bar. Third-party skills clear it or they don't get baked into the template.
+This repo's posture: **reinvent nothing worth reusing, vendor nothing untrusted, gate everything.** We already swapped the archived, SQL-injectable `@modelcontextprotocol/server-postgres` for a read-only `postgres-mcp --access-mode=restricted` (see [`SECURITY.md`](../../SECURITY.md)) — that's the bar. Third-party skills clear it or they don't get baked into the template.
 
 Snyk's **"ToxicSkills"** research found prompt-injection in a large share of the skills they tested. **"Read the source" is not optional.**
 
@@ -72,6 +72,6 @@ Do not ship these in a template. Not a judgment on every use — a judgment on _
 
 ## What this repo already covers natively (don't vendor a skill for it)
 
-**SEO/GEO is not a vendored skill here — it's _enforced_.** `@stack/seo` is the one door for page metadata + JSON-LD, `bun run check:seo` fails the build if a public page drifts, and the CLAUDE/AGENTS laws spell out the rules (see [`AGENTS.md`](../AGENTS.md) § 3.1). An enforced gate in CI beats a skill an agent may or may not read — skip any "SEO skill".
+**SEO/GEO is not a vendored skill here — it's _enforced_.** `@stack/seo` is the one door for page metadata + JSON-LD, `bun run check:seo` fails the build if a public page drifts, and the CLAUDE/AGENTS laws spell out the rules (see [`AGENTS.md`](../../AGENTS.md) § 3.1). An enforced gate in CI beats a skill an agent may or may not read — skip any "SEO skill".
 
 Categories where a skill **is** worth adding for cloners (nothing here covers them): **security, testing, a11y, performance, DevOps, UI/UX, design, marketing.** Vet each one through the 5-step law before it lands.

@@ -59,7 +59,7 @@ _Attach dates sparingly. A dated milestone is a commitment; an undated one is an
 
 _State the prioritization method so trade-offs are legible and repeatable, not vibes. Pick or adapt one._
 
-> Example: we score candidates on **reach × confidence × effort⁻¹** (RICE-lite), reviewed at the top of each cycle. Anything that violates the [architecture](../architecture.md) laws is out regardless of score.
+> Example: we score candidates on **reach × confidence × effort⁻¹** (RICE-lite), reviewed at the top of each cycle. Anything that violates the [architecture](../stack/architecture.md) laws is out regardless of score.
 
 ## Changelog of the roadmap itself
 

@@ -28,7 +28,7 @@ const button = {
 };
 
 // Day-3 of the onboarding drip. This template is coded here; the *trigger* is a
-// PostHog campaign configured in the UI off the `user_signed_up` event — see docs/email.md.
+// PostHog campaign configured in the UI off the `user_signed_up` event — see docs/stack/email.md.
 export function DripDay3({ name }: DripDay3Props) {
   return (
     <Html lang="en">

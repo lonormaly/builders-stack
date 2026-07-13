@@ -18,7 +18,7 @@ function posthog(): PostHog | null {
 
 /**
  * Runs after Better Auth creates a user (see `databaseHooks.user.create.after`).
- * This is the concrete event -> email seed for the PostHog-driven drip (docs/email.md):
+ * This is the concrete event -> email seed for the PostHog-driven drip (docs/stack/email.md):
  *   (a) capture a `user_signed_up` PostHog event — the drip campaign's trigger
  *   (b) send the coded welcome email (day-0) via @stack/email
  * ENV-GATED: no keys -> both calls no-op, sign-up still succeeds.

@@ -7,7 +7,7 @@
 # This is ONE signal — a reputation lookup, not a code review. A `benign` verdict
 # means "not known-bad", not "safe to trust blindly"; a raw GitHub skill is usually
 # `unknown` simply because nobody indexed it. Whatever this prints, you still owe the
-# skill the full "vet before you install" law in docs/agent-skills.md: read the SKILL.md
+# skill the full "vet before you install" law in docs/stack/agent-skills.md: read the SKILL.md
 # AND every bundled script, check allowed-tools + hooks, check provenance, pin a commit.
 #
 # Usage:  ./scripts/scan-skill.sh <skill-name>

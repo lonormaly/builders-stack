@@ -24,7 +24,7 @@ different _exposure_ is the whole reason for a fourth folder.
 ## The boundary — `type:package`
 
 Every package is tagged `type:package` in its `package.json` (`nx.tags`). Nx's
-`@nx/enforce-module-boundaries` enforces two halves (see [`docs/architecture.md`](./architecture.md)):
+`@nx/enforce-module-boundaries` enforces two halves (see [`docs/stack/architecture.md`](./stack/architecture.md)):
 
 - **A package may depend on `type:lib` only** — not apps, services, or other packages.
   (`{ sourceTag: "type:package", onlyDependOnLibsWithTags: ["type:lib"] }`.)

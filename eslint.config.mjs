@@ -6,7 +6,7 @@ import oxlint from "eslint-plugin-oxlint";
 const oxlintConfigPath = fileURLToPath(new URL("./.oxlintrc.json", import.meta.url));
 
 /**
- * Root ESLint flat config — this is where the two laws from docs/architecture.md
+ * Root ESLint flat config — this is where the two laws from docs/stack/architecture.md
  * get TEETH. `@nx/enforce-module-boundaries` turns "no upward import" from a review
  * convention into a lint error, using each project's `type:*` tag.
  *

@@ -16,14 +16,14 @@ You now have web + landing + api + payment (Mock provider) + storybook running a
 
 ### Toolchain
 
-Versions are pinned in [`.tool-versions`](../.tool-versions) (read by `asdf` / `mise`):
+Versions are pinned in [`.tool-versions`](../../.tool-versions) (read by `asdf` / `mise`):
 
 - **Bun `1.1.34`** — the package manager _and_ runtime (matches `packageManager` in `package.json` and CI). Never `npm`/`yarn`/`pnpm`.
 - **Node `20+`** — **not** required to run the app (Bun is the runtime), but it's the floor for the `npx`-based MCP servers in `agents/mcp.json`. Node 20 is the minimum; older majors won't resolve those servers.
 
 ### Git hooks (optional but recommended)
 
-The repo ships a [`lefthook.yml`](../lefthook.yml). Enable it once so unformatted/unlinted code can't be committed and un-typechecked code can't be pushed:
+The repo ships a [`lefthook.yml`](../../lefthook.yml). Enable it once so unformatted/unlinted code can't be committed and un-typechecked code can't be pushed:
 
 ```bash
 bunx lefthook install
@@ -105,7 +105,7 @@ Short version: **~$0/month at MVP scale.** The only day-one costs are AI tokens 
 
 ## 5. Deploying (optional)
 
-Same keys, real values. For prod/preview, point `DATABASE_URL` at your Neon connection string (one value per environment — no parallel prod/preview vars). The deploy-only credentials live in the deploy docs: **Cloudflare** (`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN`) in [`deploy.md`](./deploy.md); **Infisical** machine identity for CI secret injection in [`secrets.md`](./secrets.md).
+Same keys, real values. For prod/preview, point `DATABASE_URL` at your Neon connection string (one value per environment — no parallel prod/preview vars). The deploy-only credentials live in the deploy docs: **Cloudflare** (`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN`) in [`deploy.md`](../deploy.md); **Infisical** machine identity for CI secret injection in [`secrets.md`](../secrets.md).
 
 ## Machine-readable summary (for agents)
 

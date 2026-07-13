@@ -42,7 +42,7 @@ Three top-level roles, sorted by one question — **is it served, and to whom?**
 | `services/` | what has a URL / own deploy | served to other code             |
 | `libs/`     | shared code                 | **never served** — consumed only |
 
-Full detail lives in [`docs/architecture.md`](./docs/architecture.md) and [`agents/AGENTS.md`](./agents/AGENTS.md).
+Full detail lives in [`docs/stack/architecture.md`](./docs/stack/architecture.md) and [`agents/AGENTS.md`](./agents/AGENTS.md).
 
 ### The two laws (do not break)
 

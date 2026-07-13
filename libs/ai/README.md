@@ -33,7 +33,7 @@ for await (const chunk of result.textStream) {
 
 ## Swap providers
 
-Provider + model are just strings. Default is `openai` / `gpt-5.5`. See [`docs/ai.md`](../../docs/ai.md) — `AI_API_KEY` must match the default provider, and there's no free tier.
+Provider + model are just strings. Default is `openai` / `gpt-5.5`. See [`docs/stack/ai.md`](../../docs/stack/ai.md) — `AI_API_KEY` must match the default provider, and there's no free tier.
 
 ```ts
 await generate({

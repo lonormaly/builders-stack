@@ -18,12 +18,12 @@
 </p>
 
 <p align="center">
-  <a href="./docs/getting-started.md"><b>Getting Started</b></a> ·
+  <a href="./docs/stack/getting-started.md"><b>Getting Started</b></a> ·
   <a href="#the-map--five-buckets-defined-by-exposure"><b>Structure</b></a> ·
-  <a href="./docs/architecture.md"><b>Architecture</b></a> ·
-  <a href="./docs/free-stack.md"><b>Free Stack</b></a> ·
-  <a href="./docs/costs.md"><b>Costs</b></a> ·
-  <a href="./docs/migration.md"><b>Migration</b></a> ·
+  <a href="./docs/stack/architecture.md"><b>Architecture</b></a> ·
+  <a href="./docs/stack/free-stack.md"><b>Free Stack</b></a> ·
+  <a href="./docs/stack/costs.md"><b>Costs</b></a> ·
+  <a href="./docs/stack/migration.md"><b>Migration</b></a> ·
   <a href="./CONTRIBUTING.md"><b>Contributing</b></a>
 </p>
 
@@ -35,7 +35,7 @@
 - **What you SHIP** — `packages/` — distributables served to **third parties** (npm SDKs, embeddable widgets, CLIs): tagged `type:package`, depending on libs only, and **terminal** (nothing inside the repo imports them). Add it when you distribute something; delete it when you don't.
 - **How you OPERATE it** — `ops/` — deploy · db · secrets · runbooks · local-CI. The **outermost** layer: it reaches _down_ to drive the code; nothing reaches back up into it. Not a workspace, invisible to Nx. See [`ops/`](./ops/).
 
-Three laws — **no-upward-import** · **one-public-door** · **by-feature-not-layer**. Dependencies only ever point **down** (`apps` → `services` → `libs`); an arrow pointing up is the design smell the boundary rule rejects. The packages inside are real, working examples that prove the pattern end to end; keep the shape and [gut the examples you don't need](./docs/make-it-yours.md). **The structure is the product** — and it's the map your coding agent navigates instead of re-guessing every session.
+Three laws — **no-upward-import** · **one-public-door** · **by-feature-not-layer**. Dependencies only ever point **down** (`apps` → `services` → `libs`); an arrow pointing up is the design smell the boundary rule rejects. The packages inside are real, working examples that prove the pattern end to end; keep the shape and [gut the examples you don't need](./docs/stack/make-it-yours.md). **The structure is the product** — and it's the map your coding agent navigates instead of re-guessing every session.
 
 <!-- Optional second hero: a screenshot of the Tilt dashboard. Drop one at
      docs/assets/tilt-dashboard.png and uncomment the line below.
@@ -66,7 +66,7 @@ cp agents/mcp.json .mcp.json  # optional: wire up your agent's MCP servers (cont
 
 Always `./tilt_up.sh`, **never `tilt up` directly** — the script pins a per-project Tilt UI port (10380), so you can run several Tilt projects at once without clashing on the shared default.
 
-New here? **[`docs/getting-started.md`](./docs/getting-started.md)** is the turnkey "provide your keys" guide (what each integration is for, where to get the key, what runs without it). What it all costs: **[`docs/costs.md`](./docs/costs.md)** — ~$0/month at MVP scale.
+New here? **[`docs/stack/getting-started.md`](./docs/stack/getting-started.md)** is the turnkey "provide your keys" guide (what each integration is for, where to get the key, what runs without it). What it all costs: **[`docs/stack/costs.md`](./docs/stack/costs.md)** — ~$0/month at MVP scale.
 
 Served roles get stable named URLs via [Portless](https://github.com/vercel-labs/portless) — no pinned ports, no collisions:
 
@@ -116,7 +116,7 @@ Two rules keep it honest (borrowed from Nx):
 
 Inside each app/service, organize **by feature** (`billing/`, `users/`), not by layer (`controllers/`, `models/`). Folders should tell you what the thing _does_.
 
-Migrating an existing project in → [`docs/migration.md`](./docs/migration.md).
+Migrating an existing project in → [`docs/stack/migration.md`](./docs/stack/migration.md).
 
 ## The runtime half — Tilt
 
@@ -163,7 +163,7 @@ The **folders** are fixed from day one, even solo. Only the **packaging** grows:
 
 The stack is chosen so a real product gets from idea to paying users at near-zero cost — Cloudflare, Neon, Better Auth, Resend, PostHog, Clarity, Infisical, Creem — and most tiers carry you well past MVP (100k Cloudflare requests/day, 1M PostHog events/month, Better Auth's **no per-MAU billing**, Clarity uncapped forever). Every integration is **env-gated**: no key → silent no-op, the app still boots — you add a card, not a rebuild, when a ceiling actually bites. (The one exception: AI tokens, paid from the first call.)
 
-Why each tool, what it gives you, and the honest catches → [`docs/free-stack.md`](./docs/free-stack.md). Exact next-tier prices → [`docs/costs.md`](./docs/costs.md).
+Why each tool, what it gives you, and the honest catches → [`docs/stack/free-stack.md`](./docs/stack/free-stack.md). Exact next-tier prices → [`docs/stack/costs.md`](./docs/stack/costs.md).
 
 ## What's real vs. a stub
 
@@ -197,8 +197,8 @@ Everything above is **env-gated**: no keys → silent no-op, apps still boot.
 
 Batteries-included, all **env-gated** (no keys → silent no-op, apps still boot):
 
-- **Analytics** — PostHog (product analytics + session replay + error tracking, client _and_ server) and Microsoft Clarity. Client init is a single shared `@stack/analytics` `<Analytics/>` provider every app reuses; server capture is `posthog-node` in `services/api`. Cross-subdomain identity ties marketing-site visitors to signed-up users. See [`docs/analytics.md`](./docs/analytics.md).
-- **Email** — Resend + React Email (`@stack/email`): typed, previewable templates and a `sendEmail()` sender. On sign-up, Better Auth fires a `user_signed_up` event + a welcome email — the seed for a PostHog-driven drip. See [`docs/email.md`](./docs/email.md).
+- **Analytics** — PostHog (product analytics + session replay + error tracking, client _and_ server) and Microsoft Clarity. Client init is a single shared `@stack/analytics` `<Analytics/>` provider every app reuses; server capture is `posthog-node` in `services/api`. Cross-subdomain identity ties marketing-site visitors to signed-up users. See [`docs/stack/analytics.md`](./docs/stack/analytics.md).
+- **Email** — Resend + React Email (`@stack/email`): typed, previewable templates and a `sendEmail()` sender. On sign-up, Better Auth fires a `user_signed_up` event + a welcome email — the seed for a PostHog-driven drip. See [`docs/stack/email.md`](./docs/stack/email.md).
 
 ## Guardrails — enforced, not suggested
 
@@ -206,16 +206,16 @@ The parts most starters punt on with _"we'll add it later"_ ship here as **gates
 
 - **SEO/GEO enforced** — `@stack/seo` is the one door for page metadata; `check:seo` (in `bun run check` + CI) fails the build the moment a public page ships without metadata (or a public root goes `"use client"`), and the robots allow-list keeps AI crawlers welcome. → [`docs/writing-for-ai-search.md`](./docs/writing-for-ai-search.md)
 - **Accessibility enforced** — Oxlint `jsx-a11y` (`correctness: error`) turns an a11y regression into a lint/CI failure, not a review nit.
-- **Security / supply-chain** — secret scan (gitleaks) + dependency scan (Dependabot + osv-scanner) run in CI; third-party skills/MCPs go through the **vet-before-install** law + [`scripts/scan-skill.sh`](./scripts/scan-skill.sh) first-gate check before they touch your agent. → [`docs/agent-skills.md`](./docs/agent-skills.md)
+- **Security / supply-chain** — secret scan (gitleaks) + dependency scan (Dependabot + osv-scanner) run in CI; third-party skills/MCPs go through the **vet-before-install** law + [`scripts/scan-skill.sh`](./scripts/scan-skill.sh) first-gate check before they touch your agent. → [`docs/stack/agent-skills.md`](./docs/stack/agent-skills.md)
 - **Compliance-ready** — analytics stay dormant behind `<ConsentBanner/>` (`@stack/analytics`, GDPR default-off), with `/privacy` + data-rights endpoints wired. Readiness maps, not a report: SOC 2 Trust Service Criteria + a GDPR checklist. → [`docs/soc2-readiness.md`](./docs/soc2-readiness.md), [`docs/gdpr.md`](./docs/gdpr.md)
-- **Swappable payments** — one `PaymentProvider` interface, Creem **and** Dodo adapters behind `resolveProvider`; changing provider is a one-file swap, not a rewrite. → [`docs/payments.md`](./docs/payments.md)
+- **Swappable payments** — one `PaymentProvider` interface, Creem **and** Dodo adapters behind `resolveProvider`; changing provider is a one-file swap, not a rewrite. → [`docs/stack/payments.md`](./docs/stack/payments.md)
 - **A blog that's the GEO engine** — `apps/blog`, static MDX, is the worked showcase for writing pages an AI search index actually cites. → [`docs/writing-for-ai-search.md`](./docs/writing-for-ai-search.md)
 
 ## For your AI agent
 
 Start at [`AGENTS.md`](./AGENTS.md) — the repo-root primer Codex, Cursor, and Copilot read by convention: the map of where everything lives and the conventions to follow (Claude Code also reads [`CLAUDE.md`](./CLAUDE.md)). The [`agents/`](./agents) folder is the deep dive: skills, subagents, and an MCP config (`cp agents/mcp.json .mcp.json`) so an agent can plug in and start building _inside the structure_ instead of fighting it.
 
-Bringing in a third-party skill or MCP? **Vet it first** — it's code with your agent's permissions. [`docs/agent-skills.md`](./docs/agent-skills.md) is the "vet before you install" law + a curated, scan-gated recommended list; [`scripts/scan-skill.sh`](./scripts/scan-skill.sh) is the first-gate reputation check.
+Bringing in a third-party skill or MCP? **Vet it first** — it's code with your agent's permissions. [`docs/stack/agent-skills.md`](./docs/stack/agent-skills.md) is the "vet before you install" law + a curated, scan-gated recommended list; [`scripts/scan-skill.sh`](./scripts/scan-skill.sh) is the first-gate reputation check.
 
 ---
 

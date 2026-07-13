@@ -84,7 +84,7 @@ imports it). The template ships one worked example, `packages/widget` (`@stack/w
 - **Add one:** create `packages/<name>/`, tag it `type:package`, give it a `build`
   script that emits to `dist/` (IIFE for `<script src>` + ESM for npm), add the
   `@stack/<name>` path to `tsconfig.base.json`, version + publish. No Tiltfile
-  change (it's built, not served). Full recipe: [`docs/packages.md`](./packages.md).
+  change (it's built, not served). Full recipe: [`docs/packages.md`](../packages.md).
 - **Delete it** (you distribute nothing — the common case): `rm -rf packages`,
   drop `"packages/*"` from the root `package.json` `workspaces`, and remove the
   `"@stack/widget"` line from `tsconfig.base.json` `paths`. Same five-places trail
@@ -110,3 +110,18 @@ bunx nx run-many -t typecheck   # prove the rename is total
 ```
 
 Because every lib has **one public door** and is imported **by package name** (never a deep path), the rename is a flat find-and-replace — there are no scattered internal paths to chase. That's the boundary thesis paying off: a clean seam is a cheap rename.
+
+## Strip the template's explainer docs
+
+`docs/stack/` (this folder) explains how the **template** works — the taxonomy,
+the free-tier picks, the migration path. It's reference for _you_, not history
+your product needs to carry. Once you've made the repo yours, drop it from your
+fork's git history while keeping the files on disk:
+
+```sh
+git rm -r --cached docs/stack && echo 'docs/stack/' >> .gitignore
+```
+
+The files stay right where they are locally — `--cached` only removes them from
+the index — but they stop being tracked, so they won't show up in your fork's
+history or diffs. Delete the folder outright if you don't want it around at all.

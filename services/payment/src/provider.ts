@@ -185,7 +185,7 @@ export class MockProvider implements PaymentProvider {
  *      DODO_API_KEY → Dodo.
  *   3. Nothing configured → Mock, so the service always boots keyless.
  * Adding a third vendor is one case here + one class above — apps never change,
- * they only ever call the PaymentProvider interface. See docs/payments.md.
+ * they only ever call the PaymentProvider interface. See docs/stack/payments.md.
  */
 export function resolveProvider(env: NodeJS.ProcessEnv = process.env): PaymentProvider {
   const selector = env.PAYMENT_PROVIDER?.toLowerCase();

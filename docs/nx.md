@@ -48,7 +48,7 @@ per-project target duplication. `nx run @stack/api:typecheck` runs that package'
 
 ## The two laws, enforced (`eslint.config.mjs`)
 
-`@nx/enforce-module-boundaries` turns the [architecture](./architecture.md) rules from
+`@nx/enforce-module-boundaries` turns the [architecture](./stack/architecture.md) rules from
 review conventions into lint errors. Every project is tagged (`nx.tags` in its
 `package.json`):
 

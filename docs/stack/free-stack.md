@@ -14,7 +14,7 @@ Below is one entry per tool, in the layer order the stack uses — hosting → d
 - **Why we chose it:** Frontend hosting at the edge with a genuinely generous request budget, plus **R2 object storage with zero egress fees** — you're never billed for bandwidth out, which is where S3-style storage quietly gets expensive. Universal SSL, unmetered DDoS, and a global CDN come along for free.
 - **What you get free:** ~100,000 Worker requests/day; unlimited Pages bandwidth + 500 builds/mo; 10 GB R2 with egress always free; free CDN + DDoS.
 - **Watch:** the 100k/day Workers cap is hard, and each call gets 10 ms CPU. Heavy traffic or compute → Workers Paid ($5/mo minimum, 10M requests included).
-- **In this repo:** `apps/web` and `apps/landing` deploy to Cloudflare Workers via the OpenNext adapter. Credentials (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`) live in CI/deploy, not `.env.local`. See [`docs/deploy.md`](./deploy.md).
+- **In this repo:** `apps/web` and `apps/landing` deploy to Cloudflare Workers via the OpenNext adapter. Credentials (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`) live in CI/deploy, not `.env.local`. See [`docs/deploy.md`](../deploy.md).
 
 ## Neon — serverless Postgres with branching
 
@@ -22,7 +22,7 @@ Below is one entry per tool, in the layer order the stack uses — hosting → d
 - **Why we chose it:** Real managed Postgres with two things a plain database doesn't give you — **Git-style branching** (instant copy-on-write branches, so every PR can get its own preview DB against a copy of prod) and **scale-to-zero** (an idle database costs nothing). Any Postgres works with `@stack/db`; Neon is just the easy hosted default that autoscales instead of you sizing an instance.
 - **What you get free:** 0.5 GB storage, 100 compute-hours/month, ~100 projects × 10 branches, 6-hour point-in-time restore window.
 - **Watch:** scale-to-zero adds a ~0.3–1s cold start on the first query after idle; the **compute (CU-hours) allotment is the real ceiling**, and anything that pins compute awake burns it — an always-on/polled DB drains the month in roughly a week.
-- **In this repo:** `libs/db` (Drizzle ORM — one ORM only). `DATABASE_URL` has a local default so a fresh clone boots against local Postgres; point it at your Neon connection string for prod/preview. To hold the free tier under real traffic the stack ships **session cookie-caching on by default** (`libs/auth` — auth stops hitting the DB per request, the dominant compute drain) and a **`dba` agent + DB skills**; the "don't poll the DB" rule lets idle compute scale to zero. See [`agents/skills/run-lean-on-neon`](../agents/skills/run-lean-on-neon/SKILL.md) and [`docs/deploy.md`](./deploy.md).
+- **In this repo:** `libs/db` (Drizzle ORM — one ORM only). `DATABASE_URL` has a local default so a fresh clone boots against local Postgres; point it at your Neon connection string for prod/preview. To hold the free tier under real traffic the stack ships **session cookie-caching on by default** (`libs/auth` — auth stops hitting the DB per request, the dominant compute drain) and a **`dba` agent + DB skills**; the "don't poll the DB" rule lets idle compute scale to zero. See [`agents/skills/run-lean-on-neon`](../../agents/skills/run-lean-on-neon/SKILL.md) and [`docs/deploy.md`](../deploy.md).
 
 ## Better Auth — self-hosted TypeScript auth
 
@@ -30,7 +30,7 @@ Below is one entry per tool, in the layer order the stack uses — hosting → d
 - **Why we chose it:** Auth is where hosted providers punish growth — Auth0/Clerk bill **per monthly active user**, so your auth cost scales with your success. Better Auth is MIT-licensed and fully self-hosted: **no per-MAU billing, auth cost doesn't scale with users.** Email/password, 34+ social providers, passkeys, magic links, 2FA, organizations — with first-class TS types and DB-agnostic storage (it uses the same Drizzle DB you already have).
 - **What you get free:** all of it — free and MIT, no usage tier at all.
 - **Watch:** you own the database, migrations, and security posture; and it's young (launched 2024).
-- **In this repo:** `libs/auth`, mounted in `services/api`, boot-verified end to end (sign-up → analytics event + welcome email). Needs `BETTER_AUTH_SECRET` + `BETTER_AUTH_URL` at runtime. See [`docs/secrets.md`](./secrets.md).
+- **In this repo:** `libs/auth`, mounted in `services/api`, boot-verified end to end (sign-up → analytics event + welcome email). Needs `BETTER_AUTH_SECRET` + `BETTER_AUTH_URL` at runtime. See [`docs/secrets.md`](../secrets.md).
 
 ## Resend — transactional email developers enjoy
 
@@ -62,7 +62,7 @@ Below is one entry per tool, in the layer order the stack uses — hosting → d
 - **Why we chose it:** As soon as more than one person or machine needs the keys, `.env` files stop being a source of truth. Infisical is **open-source and self-hostable**, so you can start on its free cloud and later run the whole thing yourself with no vendor lock — it centralizes secrets across dev/staging/prod and injects them at runtime (no `.env` on disk) with native Kubernetes and Cloudflare integrations at deploy.
 - **What you get free:** cloud free forever — 5 members/machine identities, 3 projects, 3 environments, 10 integrations, scanning + sharing. Self-host the OSS core for unlimited everything.
 - **Watch:** versioning, point-in-time recovery, and fine-grained RBAC sit on the paid tier (or self-host to get them free). It's optional — the stack boots fine on `.env.local` alone.
-- **In this repo:** the source of truth for team/prod secrets — `infisical run -- ./tilt_up.sh` locally, Machine-Identity auth (`INFISICAL_PROJECT_ID` / `INFISICAL_CLIENT_ID` / `INFISICAL_CLIENT_SECRET`) in CI, native k8s + Cloudflare sync at deploy. See [`docs/secrets.md`](./secrets.md).
+- **In this repo:** the source of truth for team/prod secrets — `infisical run -- ./tilt_up.sh` locally, Machine-Identity auth (`INFISICAL_PROJECT_ID` / `INFISICAL_CLIENT_ID` / `INFISICAL_CLIENT_SECRET`) in CI, native k8s + Cloudflare sync at deploy. See [`docs/secrets.md`](../secrets.md).
 
 ## Creem — Merchant-of-Record payments
 

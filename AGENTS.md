@@ -156,11 +156,11 @@ There is **one** env file: root `.env.local` (copy from `.env.example`). Two way
 - **`./tilt_up.sh`** sources root `.env.local` into every service automatically (the `.devops/Tiltfile` handles it).
 - **Standalone `bun --filter @stack/<x> dev`** — bun only loads `.env.local` from the _invoking_ directory, so run **`./scripts/link-env.sh`** once. It symlinks root `.env.local` into each app/service (`ln -sf ../../.env.local <pkg>/.env.local`), keeping one source of truth. The symlinks are gitignored.
 
-**A fresh clone boots on an empty `.env.local`** — every paid integration is env-gated to a silent no-op (no key → the feature is off, the app still runs). Fill keys only when you actually want to send email / take payment / see analytics / call AI. Full turnkey guide: [`docs/getting-started.md`](./docs/getting-started.md) · what it costs: [`docs/costs.md`](./docs/costs.md).
+**A fresh clone boots on an empty `.env.local`** — every paid integration is env-gated to a silent no-op (no key → the feature is off, the app still runs). Fill keys only when you actually want to send email / take payment / see analytics / call AI. Full turnkey guide: [`docs/stack/getting-started.md`](./docs/stack/getting-started.md) · what it costs: [`docs/stack/costs.md`](./docs/stack/costs.md).
 
 ## 7. Agent tooling — MCP
 
-Copy [`agents/mcp.json`](./agents/mcp.json) → repo-root `.mcp.json` to give your agent: **context7** (up-to-date library docs), **postgres** (reads the live schema/data via `DATABASE_URL` — needs `uv` installed for `uvx`), **filesystem** (repo-scoped), **mobbin** (real app UI reference — paid plan). See [`docs/getting-started.md`](./docs/getting-started.md#agent-tooling) for setup.
+Copy [`agents/mcp.json`](./agents/mcp.json) → repo-root `.mcp.json` to give your agent: **context7** (up-to-date library docs), **postgres** (reads the live schema/data via `DATABASE_URL` — needs `uv` installed for `uvx`), **filesystem** (repo-scoped), **mobbin** (real app UI reference — paid plan). See [`docs/stack/getting-started.md`](./docs/stack/getting-started.md#agent-tooling) for setup.
 
 ### 7.1 Third-party skills / MCPs — vet before you install
 
@@ -172,7 +172,7 @@ A skill or MCP is **executable code running with your agent's permissions, plus 
 4. **Check provenance** — official (`anthropics/*`) / established firm > single-author brand-new repo. Mega-aggregator installer CLIs are untrusted by default. Confirm a real LICENSE.
 5. **Prefer first-party; pin commits** — small enough? author it. When you vendor, pin a commit SHA, never a moving branch.
 
-Full law + our curated, scan-gated recommended list (adapt / link-only / reject tiers): [`docs/agent-skills.md`](./docs/agent-skills.md). Scanner: [`scripts/scan-skill.sh`](./scripts/scan-skill.sh).
+Full law + our curated, scan-gated recommended list (adapt / link-only / reject tiers): [`docs/stack/agent-skills.md`](./docs/stack/agent-skills.md). Scanner: [`scripts/scan-skill.sh`](./scripts/scan-skill.sh).
 
 ## 8. Before you finish
 
@@ -190,5 +190,5 @@ Full law + our curated, scan-gated recommended list (adapt / link-only / reject 
 - [`agents/subagents.md`](./agents/subagents.md) — specialized subagents (frontend, backend, db-migrations, reviewer) and when to spawn them.
 - [`agents/skills/`](./agents/skills/) — step-by-step skills for the common structural tasks.
 - [`agents/mcp.json`](./agents/mcp.json) — the MCP servers above.
-- [`docs/architecture.md`](./docs/architecture.md) — the taxonomy and the two laws, with diagrams.
+- [`docs/stack/architecture.md`](./docs/stack/architecture.md) — the taxonomy and the two laws, with diagrams.
 - [`docs/nx.md`](./docs/nx.md) — the task graph, caching, affected, boundaries, generators.

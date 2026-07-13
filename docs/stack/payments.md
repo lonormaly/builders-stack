@@ -1,12 +1,12 @@
 # Payments — swap or add a provider
 
 Payments live behind **one typed interface**, `PaymentProvider` in
-[`services/payment/src/provider.ts`](../services/payment/src/provider.ts). Apps and
+[`services/payment/src/provider.ts`](../../services/payment/src/provider.ts). Apps and
 services only ever call that interface (via `resolveProvider()`) — they never import a
 vendor SDK. So switching Creem → Stripe/Paddle/Lemon Squeezy/Dodo, or running a second
 provider, is a **one-file change** in `provider.ts`. Nothing in `apps/*` or the rest of
 `services/*` moves. This is the `@stack/payment` adapter rule from
-[`CLAUDE.md`](../CLAUDE.md): _payments go through the adapter interface, never call a
+[`CLAUDE.md`](../../CLAUDE.md): _payments go through the adapter interface, never call a
 vendor directly._
 
 The ships-with proof: the repo carries **two** MoR adapters — `CreemProvider` (verified
