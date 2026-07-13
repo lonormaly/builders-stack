@@ -1,5 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { PostHogProvider } from "posthog-react-native";
 // The whole point of this app: the SAME design tokens the web app uses, on native.
 // Pure subpath (no DOM / React) so Metro can bundle it. Values must be RN-parseable
 // colors (hex/rgb) — React Native cannot parse oklch().
@@ -8,7 +9,25 @@ import { tokens } from "@stack/ui/tokens";
 // The design system ships light + dark palettes; this screen renders the light theme.
 const c = tokens.colors.light;
 
+// Analytics — env-gated exactly like the web (`@stack/analytics`) and server (`posthog-node`):
+// no key → PostHog never initializes and the app renders normally. Expo inlines `EXPO_PUBLIC_*`
+// into the client bundle, so set EXPO_PUBLIC_POSTHOG_KEY (and optionally _HOST) to turn it on.
+// Point it at the SAME PostHog project as apps/web + services/api → analytics parity across
+// every surface, one product, no separate mobile silo.
+const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY;
+const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+
 export default function App() {
+  // No key = analytics off (silent no-op), same contract as every other integration in the stack.
+  if (!POSTHOG_KEY) return <HomeScreen />;
+  return (
+    <PostHogProvider apiKey={POSTHOG_KEY} options={{ host: POSTHOG_HOST }} autocapture>
+      <HomeScreen />
+    </PostHogProvider>
+  );
+}
+
+function HomeScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: c.background }]}>
       <StatusBar style="auto" />

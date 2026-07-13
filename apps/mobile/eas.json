@@ -1,0 +1,25 @@
+{
+  "//": "EAS Build + Update config. OTA updates ship JS/asset changes without an app-store round-trip. To activate: `eas init` (creates the project + writes expo.extra.eas.projectId and expo.updates.url into app.json), then `eas update --branch production -m \"...\"`. `channel` links a build to an update branch. See apps/mobile/README.md.",
+  "cli": {
+    "version": ">= 5.9.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

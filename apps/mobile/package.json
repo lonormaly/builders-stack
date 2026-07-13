@@ -13,7 +13,13 @@
   "dependencies": {
     "@stack/ui": "workspace:*",
     "expo": "~57.0.1",
+    "expo-application": "~57.0.0",
+    "expo-device": "~57.0.0",
+    "expo-file-system": "~57.0.0",
+    "expo-localization": "~57.0.0",
     "expo-status-bar": "~57.0.0",
+    "expo-updates": "~57.0.6",
+    "posthog-react-native": "^4.55.0",
     "react": "^19.0.0",
     "react-native": "0.86.0"
   },
