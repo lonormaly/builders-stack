@@ -81,6 +81,8 @@ These are load-bearing. Nx turns the two headline laws into **lint errors** (eve
 
 **`@stack/seo` is the one door** for page metadata + JSON-LD. `bun run check:seo` gates it, so a public page that drifts can't merge. Source of truth: Google's guide — read it — <https://developers.google.com/search/docs/fundamentals/ai-optimization-guide>.
 
+The gate enforces the **mechanics** (metadata, canonical, JSON-LD, robots/sitemap, server-render). Making content actually **citable** by AI answers — answer-first blocks, comparison tables, corroborated stats — is authoring judgment no regex can check: see the vetted [`ai-seo`](../agents/skills/ai-seo/) skill. Enforce the mechanics, apply the authoring skill.
+
 **DO**
 
 - **Public content is server-rendered + crawlable** — never block JS/DOM/accessibility. A public page must not be a root `"use client"` component (push interactivity into a child component).
