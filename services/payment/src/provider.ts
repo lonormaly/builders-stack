@@ -183,7 +183,9 @@ export class MockProvider implements PaymentProvider {
  *   1. Explicit selector: PAYMENT_PROVIDER=creem|dodo|mock wins if set.
  *   2. Otherwise auto-detect by which key is present: CREEM_API_KEY → Creem,
  *      DODO_API_KEY → Dodo.
- *   3. Nothing configured → Mock, so the service always boots keyless.
+ *   3. Nothing configured → Mock, so the service always boots keyless in dev.
+ *      (In production this fallback is fatal — index.ts refuses to start on an
+ *      implicit Mock, because its verifyWebhook accepts unsigned payloads.)
  * Adding a third vendor is one case here + one class above — apps never change,
  * they only ever call the PaymentProvider interface. See docs/stack/payments.md.
  */
