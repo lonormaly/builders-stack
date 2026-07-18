@@ -42,13 +42,13 @@ From our own security vetting. Three tiers. **Scan every one before install** (`
 
 Safe to draw from for a public starter. Cherry-pick; don't bulk-import.
 
-| Skill                                                  | Why                                                                                        | Note                                                                     |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| **`anthropics/*`** (official)                          | First-party, maintained, lowest supply-chain risk. **Start here for anything they cover.** | —                                                                        |
+| Skill                                                  | Why                                                                                        | Note                                                                                              |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| **`anthropics/*`** (official)                          | First-party, maintained, lowest supply-chain risk. **Start here for anything they cover.** | —                                                                                                 |
 | **`coreyhaines31/marketingskills`**                    | MIT, clean, well-scoped. Marketing/GTM is the developer weak spot — this fills it.         | **Cherry-pick a few** (cold-email, CRO, **`ai-seo`** — vendored, see below) — don't dump all ~50. |
-| **`mattpocock/skills`**                                | Testing + TypeScript, from a reputable author.                                             | —                                                                        |
-| **`trailofbits/skills`**                               | Security review / code-audit — **the gold standard**.                                      | **CC-BY-SA** — preserve attribution if you redistribute.                 |
-| **`ui-ux-pro-max`** — data-CSV knowledge base **only** | The CSV knowledge base is inert data, low-risk, useful.                                    | Take **only** the data-CSV part; the full bundle is Tier 2.              |
+| **`mattpocock/skills`**                                | Testing + TypeScript, from a reputable author.                                             | —                                                                                                 |
+| **`trailofbits/skills`**                               | Security review / code-audit — **the gold standard**.                                      | **CC-BY-SA** — preserve attribution if you redistribute.                                          |
+| **`ui-ux-pro-max`** — data-CSV knowledge base **only** | The CSV knowledge base is inert data, low-risk, useful.                                    | Take **only** the data-CSV part; the full bundle is Tier 2.                                       |
 
 ### Tier 2 — Link-only / scan-first / opt-in (great but heavy or hook-installing)
 
@@ -76,6 +76,6 @@ There are two halves to SEO/GEO, and they get handled differently here — the d
 
 **Mechanics are _enforced_, not a skill.** `@stack/seo` is the one door for page metadata + JSON-LD, `bun run check:seo` fails the build if a public page drifts, and the CLAUDE/AGENTS laws spell out the rules (see [`AGENTS.md`](../../AGENTS.md) § 3.1). An enforced gate in CI beats a skill an agent may or may not read — so **don't vendor a skill for the mechanics** (metadata, canonical, robots/sitemap, JSON-LD plumbing). Skip the mechanics-flavored marketing skills (`seo-audit`, `schema`) — the gate owns them.
 
-**But the gate can't write _content_.** Getting *cited* by AI answers — answer-first blocks, comparison tables, corroborated stats, honest "when-NOT-to-use" — is authoring judgment no regex can check. That half **is** worth a vetted skill: [`ai-seo`](../../agents/skills/ai-seo/) (GEO / AEO / LLMO), cherry-picked from `coreyhaines31/marketingskills` (Tier-1), pinned to a commit + vetted through the 5-step law. Gate = plumbing; `ai-seo` = content. They compose. So the rule isn't "skip any SEO skill" — it's **enforce the mechanics, vendor the authoring.**
+**But the gate can't write _content_.** Getting _cited_ by AI answers — answer-first blocks, comparison tables, corroborated stats, honest "when-NOT-to-use" — is authoring judgment no regex can check. That half **is** worth a vetted skill: [`ai-seo`](../../agents/skills/ai-seo/) (GEO / AEO / LLMO), cherry-picked from `coreyhaines31/marketingskills` (Tier-1), pinned to a commit + vetted through the 5-step law. Gate = plumbing; `ai-seo` = content. They compose. So the rule isn't "skip any SEO skill" — it's **enforce the mechanics, vendor the authoring.**
 
 Other categories where a skill **is** worth adding for cloners (nothing here covers them): **security, testing, a11y, performance, DevOps, UI/UX, design, marketing.** Vet each one through the 5-step law before it lands.
