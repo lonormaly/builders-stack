@@ -70,6 +70,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: OSV vuln-scan
         run: docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/google/osv-scanner:v2.2.4 scan -r ./

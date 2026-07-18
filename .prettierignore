@@ -1,0 +1,8 @@
+# Vendored third-party content — keep pristine to match upstream (easy re-vendor).
+# The repo's formatter (oxfmt) reads this file. First-party code/docs are NOT listed
+# here and must stay formatted.
+agents/skills/ai-seo/
+
+# Generated
+.nx/
+**/next-env.d.ts
