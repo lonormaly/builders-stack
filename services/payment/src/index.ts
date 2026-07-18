@@ -2,13 +2,33 @@
 //   GET  /health     liveness + which provider is live
 //   POST /checkout   create a checkout session
 //   POST /webhook    verify signature, handle subscription/payment events
-// Boots without CREEM_API_KEY (falls back to Mock); goes live when the key is set.
+// Boots without CREEM_API_KEY (falls back to Mock) in dev; in production a keyless
+// fallback to Mock is fatal — see the guard below.
 import { Hono } from "hono";
 import { z } from "zod";
 import { resolveProvider, type WebhookEvent } from "./provider.js";
 import { reportError } from "@stack/observability";
 
 const provider = resolveProvider();
+
+// Fail closed in production: MockProvider.verifyWebhook trusts any payload, so a prod
+// deploy that reached Mock by fallback (no key, no selector) would accept forged
+// checkout/subscription events from anyone. Explicit PAYMENT_PROVIDER=mock still boots —
+// that's a deliberate choice, not a missing key. Mirrors the BETTER_AUTH_SECRET guard
+// in services/api.
+if (
+  process.env.NODE_ENV === "production" &&
+  provider.name === "mock" &&
+  process.env.PAYMENT_PROVIDER?.toLowerCase() !== "mock"
+) {
+  console.error(
+    "[payment] FATAL: no payment provider configured in production — the Mock fallback " +
+      "accepts unsigned webhooks. Set CREEM_API_KEY/DODO_API_KEY (or PAYMENT_PROVIDER=mock " +
+      "to run the mock deliberately). Refusing to start.",
+  );
+  process.exit(1);
+}
+
 const app = new Hono();
 
 // Reject oversized bodies before parsing (cheap DoS guard) + baseline security headers.

@@ -18,7 +18,6 @@
     "**/dist/**",
     "**/build/**",
     "**/storybook-static/**",
-    "**/next-env.d.ts",
-    "libs/db/index.js"
+    "**/next-env.d.ts"
   ]
 }
