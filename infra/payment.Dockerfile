@@ -12,5 +12,7 @@ FROM oven/bun:1.1.34-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /app /app
+# Drop root: the oven/bun base ships a non-root `bun` user; nothing here needs root.
+USER bun
 EXPOSE 3002
 CMD ["bun", "--filter", "@stack/payment", "start"]

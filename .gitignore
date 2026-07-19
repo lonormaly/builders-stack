@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.next/
+out/
+storybook-static/
+*.tsbuildinfo
+
+# Caches
+.nx/
+.turbo/
+.expo/
+coverage/
+
+# Env — ONE root .env.local is the source of truth (scripts/link-env.sh symlinks it
+# into each app/service). Never commit it; .env.example documents every key.
+.env.local
+.env*.local
+
+# OS / editor
+.DS_Store

@@ -18,9 +18,22 @@ spec:
       labels:
         app: stack-api
     spec:
+      # Pod baseline hardening: no root, no privilege escalation, default seccomp.
+      # The images run as the non-root `bun` user (see infra/*.Dockerfile), so
+      # runAsNonRoot passes without pinning a uid here.
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: api
-          image: ghcr.io/OWNER/stack-api:latest # ← push your built image here
+          # Pin the tag (or @sha256 digest) of the image you actually built — a mutable
+          # :latest makes rollbacks and "what is running right now?" unanswerable.
+          image: ghcr.io/OWNER/stack-api:v0.1.0 # ← push your built image + pinned tag here
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 3001
           env:
