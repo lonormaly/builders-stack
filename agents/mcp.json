@@ -4,7 +4,9 @@
     "context7": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp", "--api-key", "${CONTEXT7_API_KEY}"]
+      "args": ["-y", "@upstash/context7-mcp"],
+      "_comment": "Key via env, not argv — CLI args show up in `ps`/crash reports. The server reads CONTEXT7_API_KEY when --api-key is absent (same pattern as postgres below).",
+      "env": { "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}" }
     },
     "postgres": {
       "type": "stdio",

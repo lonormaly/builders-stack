@@ -56,6 +56,31 @@ app.use("*", async (c, next) => {
 // comes from the typed env door (@stack/config) — declared once, no inline default here.
 app.use("*", cors({ origin: getEnv().WEB_ORIGIN, credentials: true }));
 
+// CSRF: origin check on every state-changing request (POST /me/delete, POST/PATCH/DELETE
+// /posts). The session cookie is SameSite=Lax (Better Auth's default) which already blocks
+// cross-site fetch/form POSTs in modern browsers — but that attribute lives in deployed
+// cookie config we don't control from here, and CORS only gates who can READ a response,
+// not who can SEND one. So enforce it server-side too: a mutating request that carries an
+// Origin header must come from this API's own origin (Swagger UI "try it out") or a trusted
+// web origin. A missing Origin means a non-browser client (curl, server-to-server) — cookie
+// CSRF needs a victim's browser, and browsers always attach Origin to cross-origin non-GET
+// requests. Better Auth additionally enforces trustedOrigins on its own /api/auth/* routes.
+const trustedWriteOrigins = new Set(
+  [
+    getEnv().WEB_ORIGIN,
+    ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "").split(",").map((s) => s.trim()),
+  ].filter(Boolean),
+);
+app.use("*", async (c, next) => {
+  const method = c.req.method;
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return next();
+  const origin = c.req.header("origin");
+  if (origin && origin !== new URL(c.req.url).origin && !trustedWriteOrigins.has(origin)) {
+    return c.json({ error: "Cross-origin request rejected" }, 403);
+  }
+  return next();
+});
+
 // --- liveness ---
 app.get("/health", (c) => c.json({ status: "ok", service: "api", uptime: process.uptime() }));
 

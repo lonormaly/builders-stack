@@ -7,6 +7,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { resolveProvider, type WebhookEvent } from "./provider.js";
+import { createRateLimiter } from "./rate-limit.js";
 import { reportError } from "@stack/observability";
 
 const provider = resolveProvider();
@@ -59,7 +60,19 @@ const CheckoutBody = z.object({
   customerEmail: z.string().email().optional(),
 });
 
+// /checkout is unauthenticated (a browser hits it before any session exists on this
+// service), which makes it a free lever for spamming provider checkout sessions and
+// checkout emails to arbitrary addresses. Per-IP fixed-window limit is the cheap abuse
+// brake; add real session auth here the day entitlements are wired up. Caveat:
+// x-forwarded-for is only trustworthy behind your own proxy — standalone, everything
+// shares the "unknown" bucket, which still caps total abuse throughput.
+const checkoutLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
+
 app.post("/checkout", async (c) => {
+  const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!checkoutLimiter.check(ip)) {
+    return c.json({ error: "Too many requests" }, 429);
+  }
   const parsed = CheckoutBody.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: "Invalid body", issues: parsed.error.issues }, 400);
   try {

@@ -84,11 +84,6 @@ reason = "Transitive lodash@4.17.21 pinned by chevrotain@10.5.0 (build-time pars
 id = "GHSA-r5fr-rjxr-66jc" # code injection via _.template
 ignoreUntil = 2026-10-01
 reason = "Transitive lodash@4.17.21 pinned by chevrotain@10.5.0 (build-time parser). OSV 'fix' 4.18.0 is unpublished — no upgrade exists. Never in a deployed bundle."
-[[IgnoredVulns]]
-id = "GHSA-xxjr-mmjv-4gpg" # prototype pollution _.unset / _.omit
-ignoreUntil = 2026-10-01
-reason = "Transitive lodash@4.17.21 pinned by chevrotain@10.5.0 (build-time parser). OSV 'fix' 4.18.0 is unpublished — no upgrade exists. Never in a deployed bundle."
-
 # --- uuid 7.0.3 — xcode transitive (Expo/RN tooling) ---
 [[IgnoredVulns]]
 id = "GHSA-w5hq-g745-h8pq" # missing buffer bounds check v3/v5/v6

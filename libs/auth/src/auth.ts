@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db, user, session, account, verification } from "@stack/db";
+import { sendEmail } from "@stack/email";
 import { onUserSignedUp, logSignIn } from "./on-signup";
 
 // ENV-GATED: importing this module must never throw when secrets are absent.
@@ -25,6 +26,32 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    // Enforce only when mail can actually be delivered: with no RESEND_API_KEY every
+    // send is a logged no-op (see @stack/email), so requiring verification keyless
+    // would lock every new account out of sign-in. Keyed (staging/prod) ⇒ enforced;
+    // keyless local dev ⇒ sign-up works as before.
+    requireEmailVerification: Boolean(process.env.RESEND_API_KEY),
+  },
+
+  // Verification mail goes out through the same env-gated @stack/email door as the
+  // welcome mail (typed "verify-email" template). Better Auth generates + stores the
+  // token in the `verification` table and builds the callback `url` itself.
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user: verifyUser, url }) => {
+      const name = verifyUser.name?.trim() || verifyUser.email.split("@")[0] || "there";
+      try {
+        await sendEmail({
+          to: verifyUser.email,
+          template: "verify-email",
+          props: { name, verifyUrl: url },
+        });
+      } catch (err) {
+        // Never let a mail failure break the sign-up flow; the user can re-request.
+        console.error("[auth] verification email failed", err);
+      }
+    },
   },
 
   // Session cookie-cache — ON by default. `getSession` runs on nearly every request;

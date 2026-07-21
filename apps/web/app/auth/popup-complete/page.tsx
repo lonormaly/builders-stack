@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+
 // Where Better Auth lands the browser after social OAuth completes (passed as
 // `callbackURL` from the auth page — a WEB-origin page, so the session cookie for the
 // api origin is already set by the time we get here).
@@ -25,10 +27,14 @@ const SIGNAL = `
 })();
 `;
 
-export default function PopupComplete() {
+export default async function PopupComplete() {
+  // The CSP (proxy.ts) only permits nonce'd inline scripts — read the per-request nonce
+  // so this parse-time signal keeps executing. Without it the browser silently drops the
+  // script and the opener never hears "done".
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <div className="mx-auto max-w-md">
-      <script dangerouslySetInnerHTML={{ __html: SIGNAL }} />
+      <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SIGNAL }} />
       <p className="text-sm text-muted-foreground">One moment…</p>
     </div>
   );

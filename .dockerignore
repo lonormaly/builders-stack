@@ -1,0 +1,17 @@
+# Build context is the repo root (see infra/*.Dockerfile) — keep secrets and junk
+# out of every image layer. bun install runs INSIDE the image, so host node_modules
+# never needs to travel.
+.git
+.nx
+**/node_modules
+**/.next
+**/dist
+**/build
+**/storybook-static
+**/*.tsbuildinfo
+
+# Secrets: the root .env.local plus the per-package copies/symlinks that
+# scripts/link-env.sh creates inside apps/, services/, and libs/db.
+.env*
+**/.env*
+!.env.example
