@@ -6,7 +6,7 @@
     "suspicious": "warn"
   },
   "options": {
-    "typeAware": true
+    "typeAware": false
   },
   "rules": {
     "react/react-in-jsx-scope": "off",
