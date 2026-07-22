@@ -70,6 +70,25 @@ Do not ship these in a template. Not a judgment on every use — a judgment on _
 
 ---
 
+## (c) Don't hand the agent your prod keys — broker them
+
+The law above governs **what code the agent runs**. This is the other half: **what secrets it holds.** The reason we scan skills is that anything the agent runs inherits the agent's access — so the strongest form of that principle is to make sure the agent's access includes **no real credentials at all.**
+
+**Climb this as the keys get worth stealing — don't front-load it.**
+
+- **MVP / local (what this repo ships).** MCP configs use `${VAR}` refs resolved from `.env.local` (git-ignored); nothing secret is committed, the keys are free-tier, and they live on your laptop. Proportionate — don't over-build.
+- **Team / prod.** When the agent handles _real_ prod credentials (paid APIs, prod DB, CI runners), stop putting them in the agent's env. Broker them: a **credential broker / transparent proxy** — [Infisical Agent Proxy](https://infisical.com/docs/documentation/platform/agent-proxy/quickstart) is the worked example — leaves the agent holding only placeholders (`HTTPS_PROXY=broker:port`) while the broker injects the real secret on the wire. A prompt-injected skill then has nothing in its env to exfiltrate.
+
+**Read the mechanism honestly before adopting it — it's a MITM proxy, which is a real trade, not a free lunch:**
+
+- To inject a credential into **outbound HTTPS**, the broker **terminates TLS**: it decrypts the agent's traffic, adds the secret, re-encrypts to the upstream. The agent must **trust the broker's root CA**. So you didn't _delete_ the secret — you **moved** it into a proxy that can now read _all_ the agent's HTTPS in cleartext. That's a concentration of trust, which is exactly why it belongs on **separate infra inside a private network**, with a split identity (a _proxy_ identity that may read secrets, an _agent_ identity that may only proxy). Run the broker on the same laptop as the agent and there's no trust boundary — you've added a component, not isolation.
+- **Coverage is HTTP-only.** It brokers requests that flow through the proxy — the HTTP MCP servers (`neon`, `posthog`), app→API calls. It does **not** cover the **Postgres wire** (`DATABASE_URL` / `postgres-mcp` — not HTTP, no header to rewrite) or **stdio servers keyed by a process env var** (`context7`, `filesystem`). Anything that cert-pins or ignores `HTTPS_PROXY` slips past. So it's "HTTP API creds are brokered," **not** "keys are safe everywhere."
+- **Cheaper control to reach for first, everywhere:** scoped, least-privilege, **rotatable** keys — read-only DB roles, per-service tokens, short TTLs. That blunts "the agent leaked a key" at a fraction of the cost of a TLS-intercepting proxy, and it's worth doing regardless.
+
+> One line: **the agent should hold placeholders, not secrets — but a TLS-intercepting broker is a trusted component you own, not a magic wand. Adopt it when the keys are worth stealing, on infra you control.**
+
+---
+
 ## SEO/GEO — enforce the mechanics, vendor the authoring
 
 There are two halves to SEO/GEO, and they get handled differently here — the distinction matters.
