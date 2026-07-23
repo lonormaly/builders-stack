@@ -23,6 +23,13 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # oxlint-tsgolint is oxlint's type-aware backend; its major line (7.x) tracks
+      # TypeScript 7, which we deliberately hold back (see above). Type-aware mode is
+      # also currently disabled (the backend was OOM-ing at tens of GB). Every regroup
+      # kept re-proposing the 7.x jump (closed #29, #31) — hold its majors too until we
+      # adopt TS 7. Minor/patch still flow.
+      - dependency-name: "oxlint-tsgolint"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-dependencies:
         patterns:
