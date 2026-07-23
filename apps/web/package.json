@@ -14,7 +14,7 @@
     "@stack/seo": "workspace:*",
     "@stack/ui": "workspace:*",
     "better-auth": "^1.6.23",
-    "next": "16.3.0-preview.6",
+    "next": "16.3.0-preview.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
