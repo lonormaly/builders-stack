@@ -38,7 +38,7 @@ A `services/*` package is **anything with a URL or its own deploy** — an HTTP 
      "scripts": {
        "dev": "bun --hot src/index.ts",
        "start": "bun src/index.ts",
-       "typecheck": "tsc --noEmit"
+       "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit"
      }
    }
    ```
@@ -79,4 +79,4 @@ A `services/*` package is **anything with a URL or its own deploy** — an HTTP 
 
 ## Verify
 
-`./tilt_up.sh` shows the new resource green in the dashboard (`localhost:10380`); `curl http://<name>.stack.localhost:1355/health` returns `{ "ok": true }` (skip for a worker and check its log line). `bun run check:deployables` and `bun run typecheck` pass.
+`./tilt_up.sh` shows the new resource green in the dashboard (`localhost:10380`); `curl http://<name>.stack.localhost:1355/health` returns `{ "ok": true }` (skip for a worker and check its log line). `bun run check:deployables`, `bun run check:typescript`, and `bun run typecheck` pass.

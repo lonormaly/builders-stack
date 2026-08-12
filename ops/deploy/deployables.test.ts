@@ -10,8 +10,17 @@ const skill = readFileSync(
   "utf8",
 );
 const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
+const fastCi = readFileSync(new URL("../ci/fast.sh", import.meta.url), "utf8");
 const sizeGate = readFileSync(
   new URL("../../scripts/check-image-size.ts", import.meta.url),
+  "utf8",
+);
+const typeScriptGate = readFileSync(
+  new URL("../../scripts/check-typescript.ts", import.meta.url),
+  "utf8",
+);
+const addLibSkill = readFileSync(
+  new URL("../../agents/skills/add-a-lib/SKILL.md", import.meta.url),
   "utf8",
 );
 describe("deployment contract", () => {
@@ -42,5 +51,12 @@ describe("deployment contract", () => {
     expect(
       registry.filter((item) => item.strategy === "not-deployed").every((item) => item.reason),
     ).toBe(true);
+  });
+  test("future workspaces inherit stable TypeScript 7", () => {
+    expect(typeScriptGate).toContain("Stable TypeScript 7 checks every workspace");
+    expect(skill).toContain("scripts/typecheck-native.sh");
+    expect(addLibSkill).toContain("scripts/typecheck-native.sh");
+    expect(ci).toContain("ops/ci/fast.sh");
+    expect(fastCi).toContain("check:typescript");
   });
 });

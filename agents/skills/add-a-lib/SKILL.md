@@ -34,7 +34,7 @@ A `libs/*` package is **shared code that is never served** — other packages co
      "private": true,
      "type": "module",
      "exports": { ".": "./src/index.ts" },
-     "scripts": { "typecheck": "tsc --noEmit" }
+     "scripts": { "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit" }
    }
    ```
 
@@ -52,6 +52,8 @@ A `libs/*` package is **shared code that is never served** — other packages co
    ```
 
 6. **Install so the workspace links it:** `bun install` (root). The `@stack/<name>` name now resolves across the workspace.
+
+   `bun run check:typescript` enforces the shared stable TypeScript 7 checker for every workspace.
 
 7. **Consume it** from an app/service by **package name only**:
    ```ts

@@ -7,6 +7,18 @@
 # The runtime app resolves the SAFE versions (better-auth@1.6.23, drizzle-orm@0.45.2,
 # esbuild@0.28.1); the flagged copies are isolated under dev tooling that pins them.
 
+# --- image-size 0.5.5 / 1.2.1 — build tooling, no fixed release ---
+# Less/Nx and Metro inspect repository-owned build assets. Neither copy receives customer
+# input or ships in a runtime. OSV names no fixed published release for either advisory.
+[[IgnoredVulns]]
+id = "GHSA-5p2g-fcmc-qvqq"
+ignoreUntil = 2026-09-01
+reason = "image-size is used only by Nx/Less and Metro build tooling over repository-owned assets. It never receives customer input or ships in a runtime, and the advisory names no fixed release."
+[[IgnoredVulns]]
+id = "GHSA-w3rx-r6r6-pgpr"
+ignoreUntil = 2026-09-01
+reason = "image-size is used only by Nx/Less and Metro build tooling over repository-owned assets. It never receives customer input or ships in a runtime, and the advisory names no fixed release."
+
 # --- better-auth 1.4.21 (9 advisories) — @better-auth/cli devDep only ---
 # @better-auth/cli@1.4.21 is the LATEST published cli and internally pins
 # better-auth@1.4.21. It's a devDependency (libs/auth `auth:generate` schema codegen),
@@ -48,6 +60,10 @@ reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-ti
 id = "GHSA-wxw3-q3m9-c3jr" # OAuth callback mismatched state
 ignoreUntil = 2026-10-01
 reason = "Transitive better-auth@1.4.21 under @better-auth/cli (devDep, build-time codegen only). Runtime uses better-auth@1.6.23. cli@1.4.21 is latest and pins it; no cheap bump."
+[[IgnoredVulns]]
+id = "GHSA-qq9h-g4jm-xgf3" # trusted-proxy spoofing in runtime request handling
+ignoreUntil = 2026-10-01
+reason = "Transitive better-auth@1.4.21 under @better-auth/cli only. The CLI never handles HTTP requests; runtime uses fixed better-auth@1.6.23."
 
 # --- drizzle-orm 0.41.0 — @better-auth/cli devDep only ---
 # Same @better-auth/cli pins drizzle-orm@^0.41.0 internally. Runtime uses
