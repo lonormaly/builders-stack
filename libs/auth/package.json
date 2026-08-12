@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit",
     "auth:generate": "bunx @better-auth/cli generate --config src/auth.ts --output ../db/src/auth-schema.ts"
   },
   "dependencies": {

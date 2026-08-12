@@ -1,6 +1,6 @@
 ---
 name: add-a-service
-description: Scaffold a new service under services/ in the builders-stack monorepo. Use when something needs its own URL, port, or independent deploy (an HTTP API, a webhook receiver, a background worker). Covers the package.json, the Hono entrypoint, reading config from env, wiring it into the Tiltfile as a local_resource, and adding a Dockerfile under infra/.
+description: Scaffold a new service under services/ in the builders-stack monorepo. Use when something needs its own URL, port, or independent deploy. Covers the package, entrypoint, config, Tilt, deployment registry, and shared small-image build path.
 ---
 
 # Add a service
@@ -71,10 +71,12 @@ A `services/*` package is **anything with a URL or its own deploy** — an HTTP 
      labels=['services'])
    ```
 
-8. **Add a Dockerfile** at `infra/<name>.Dockerfile` (copy the pattern from `infra/api.Dockerfile`). If it needs to run in compose/k8s, add it there too.
+8. **Register the deployment decision** in `ops/deploy/deployables.json`. Every service needs one entry. A deployed Bun service uses `k3s-bun-bundle` with its entry point and image name. A local-only service uses `not-deployed` with a plain reason. `bun run check:deployables` fails if this is missing.
 
-9. **Add its env vars** to `.env.example` with safe local defaults.
+9. **Reuse the shared small-image builder** for a Bun service. `ops/deploy/build-images.sh` bundles the registered entry before Docker and packages only that file with `infra/bundled-bun-service.Dockerfile`. Do not add a Dockerfile that copies the monorepo and installs every workspace. The builder runs the hard 300 MB image gate before it can push.
+
+10. **Add its env vars** to `.env.example` with safe local defaults.
 
 ## Verify
 
-`./tilt_up.sh` shows the new resource green in the dashboard (`localhost:10380`); `curl http://<name>.stack.localhost:1355/health` returns `{ "ok": true }` (skip for a worker — check its log line instead). `bun run typecheck` passes.
+`./tilt_up.sh` shows the new resource green in the dashboard (`localhost:10380`); `curl http://<name>.stack.localhost:1355/health` returns `{ "ok": true }` (skip for a worker and check its log line). `bun run check:deployables` and `bun run typecheck` pass.

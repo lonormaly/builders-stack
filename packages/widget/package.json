@@ -25,7 +25,7 @@
     "build": "bun run build:iife && bun run build:esm",
     "build:iife": "esbuild src/embed.ts --bundle --format=iife --minify --outfile=dist/widget.js",
     "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit",
     "test": "bun test"
   },
   "dependencies": {

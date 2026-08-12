@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "email dev --dir ./src/templates",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",

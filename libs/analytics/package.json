@@ -9,7 +9,7 @@
     "./events": "./src/events.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit",
     "test": "bun test"
   },
   "dependencies": {

@@ -1,0 +1,55 @@
+[
+  {
+    "project": "@stack/landing",
+    "unit": "landing",
+    "strategy": "app-build",
+    "build": "bun --filter @stack/landing build",
+    "owner": "scripts/deploy.sh"
+  },
+  {
+    "project": "@stack/web",
+    "unit": "web",
+    "strategy": "app-build",
+    "build": "bun --filter @stack/web build",
+    "owner": "scripts/deploy.sh"
+  },
+  {
+    "project": "@stack/blog",
+    "unit": "blog",
+    "strategy": "app-build",
+    "build": "bun --filter @stack/blog build",
+    "owner": "scripts/deploy.sh"
+  },
+  {
+    "project": "@stack/mobile",
+    "strategy": "not-deployed",
+    "reason": "The Expo starter is not deployed by the web and k3s release script."
+  },
+  {
+    "project": "@stack/api",
+    "unit": "api",
+    "strategy": "k3s-bun-bundle",
+    "entry": "services/api/src/index.ts",
+    "image": "stack-api",
+    "build": "bun build services/api/src/index.ts --target=bun",
+    "owner": "ops/deploy/build-images.sh"
+  },
+  {
+    "project": "@stack/ai-worker",
+    "unit": "ai-worker",
+    "strategy": "k3s-bun-bundle",
+    "entry": "services/ai-worker/src/index.ts",
+    "image": "stack-ai-worker",
+    "build": "bun build services/ai-worker/src/index.ts --target=bun",
+    "owner": "ops/deploy/build-images.sh"
+  },
+  {
+    "project": "@stack/payment",
+    "unit": "payment",
+    "strategy": "k3s-bun-bundle",
+    "entry": "services/payment/src/index.ts",
+    "image": "stack-payment",
+    "build": "bun build services/payment/src/index.ts --target=bun",
+    "owner": "ops/deploy/build-images.sh"
+  }
+]
