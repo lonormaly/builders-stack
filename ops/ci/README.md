@@ -11,9 +11,11 @@ BASE=origin/develop ops/ci/local-ci.sh   # diff against a different base
 `node_modules/.stack-lock` is byte-identical to the current lockfile.
 
 The fast workflow runs changed-file format and lint checks, Nx affected
-lint/typecheck/test, SEO, and the deployment registry in parallel. Set the
+typecheck/test, SEO, and the deployment registry in parallel. A persistent runner
+keeps `node_modules` behind the exact `bun.lock` marker. Ephemeral GitHub runners install
+cold because restoring and saving a portable cache takes longer than Bun's install. Set the
 repository variable `FAST_RUNNER_LABEL` to a dedicated persistent runner label
-to keep dependencies and caches warm. GitHub-hosted runners use portable caches.
+to keep dependencies warm.
 
 `release-proof.yml` runs the slower clean-room checks after a green push to
 main: PostgreSQL 18, dependency and secret scans, full lint/format, and affected
