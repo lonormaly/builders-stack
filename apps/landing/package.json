@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit"
   },
   "dependencies": {
     "@stack/analytics": "workspace:*",

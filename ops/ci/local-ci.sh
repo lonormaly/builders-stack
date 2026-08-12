@@ -12,8 +12,13 @@ BASE="${BASE:-origin/main}"
 
 step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
 
-step "Install dependencies (frozen lockfile)"
-bun install --frozen-lockfile
+step "Install dependencies only when bun.lock changed"
+if [[ -f node_modules/.stack-lock ]] && cmp -s bun.lock node_modules/.stack-lock; then
+  echo "  dependencies already match bun.lock"
+else
+  bun install --frozen-lockfile --ignore-scripts
+  cp bun.lock node_modules/.stack-lock
+fi
 
 step "Secret scan (gitleaks)"
 if command -v gitleaks >/dev/null 2>&1; then
@@ -22,17 +27,8 @@ else
   echo "  gitleaks not installed — skipped locally (CI runs it). brew install gitleaks"
 fi
 
-step "Lint (oxlint)"
-bunx oxlint
-
-step "Format check (oxfmt)"
-bunx oxfmt --check .
-
-step "SEO/GEO check (check:seo)"
-bun run check:seo
-
-step "Boundaries · typecheck · test · build (affected vs $BASE)"
-bunx nx affected -t lint typecheck test build --base="$BASE"
+step "Parallel affected checks"
+bash ops/ci/fast.sh "$BASE" HEAD
 
 step "Dependency vuln scan (osv-scanner)"
 if command -v osv-scanner >/dev/null 2>&1; then

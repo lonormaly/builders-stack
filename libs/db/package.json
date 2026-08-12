@@ -11,7 +11,7 @@
     "push": "drizzle-kit push",
     "migrate": "bun run src/migrate.ts",
     "seed": "bun run src/seed.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

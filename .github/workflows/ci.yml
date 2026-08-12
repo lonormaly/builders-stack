@@ -5,71 +5,76 @@ on:
   push:
     branches: [main]
 
-# Nx caches task results and computes the affected graph, so a PR only re-runs
-# what actually changed. bun stays the package manager; Nx is the task runner.
+concurrency:
+  group: ci-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   affected:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.FAST_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    env:
+      NX_DAEMON: "false"
+      NX_MAX_CACHE_SIZE: 4GB
+      NODE_OPTIONS: "--max-old-space-size=2048"
     steps:
       - uses: actions/checkout@v7
         with:
-          # nx affected needs history to diff against the base branch.
-          fetch-depth: 0
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+          fetch-depth: 2
+          clean: false
+      - name: Clean source and keep warm dependencies
+        run: |
+          git reset --hard HEAD
+          git clean -ffdx -e node_modules/
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.12
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      # COMPLIANCE — secret scanning (SOC2 CC6.1 / vuln mgmt). Fails the build if a real
-      # secret is committed. Config + allowlist: .gitleaks.toml. gitleaks-action reads it
-      # automatically. (Free for public repos + individuals; GitHub orgs need a free
-      # GITLEAKS_LICENSE — see https://gitleaks.io.)
-      - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v3
+      - name: Restore portable caches
+        if: vars.FAST_RUNNER_LABEL == ''
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.bun/install/cache
+            .nx/cache
+          key: stack-ci-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            stack-ci-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            stack-ci-${{ runner.os }}-
+      - name: Install build tools only when bun.lock changed
+        run: |
+          if [ -f node_modules/.stack-lock ] && cmp -s bun.lock node_modules/.stack-lock; then
+            echo "dependencies already match bun.lock"
+          else
+            bun install --frozen-lockfile --ignore-scripts
+            cp bun.lock node_modules/.stack-lock
+          fi
+      - name: Find the changed range
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Oxlint + Oxfmt run over the WHOLE repo (Rust-fast, no Nx graph needed) —
-      # they gate every PR in seconds. The Nx ESLint pass below (`nx affected -t
-      # lint`) is the ONLY ESLint run and enforces module boundaries. See
-      # docs/linting.md for the division of labor.
-      - name: Lint (oxlint)
-        run: bunx oxlint
-
-      - name: Format check (oxfmt)
-        run: bunx oxfmt --check .
-
-      # SEO/GEO drift gate — every public page must export metadata + be server-rendered,
-      # every app with public pages must ship robots.ts + sitemap.ts. Whole-repo, fast.
-      - name: SEO/GEO check (check:seo)
-        run: bun run check:seo
-
-      # Derives NX_BASE / NX_HEAD: on a PR, base = merge-base with the target
-      # branch; on a push to main, base = the last successful commit.
-      - name: Derive affected SHAs
-        uses: nrwl/nx-set-shas@v5
-
-      # ESLint boundary enforcement (@nx/enforce-module-boundaries) + typecheck + test + build.
-      # a11y is enforced inside the `oxlint` step above (jsx-a11y plugin, correctness=error).
-      - name: Boundaries · typecheck · test · build (affected only)
-        run: bunx nx affected -t lint typecheck test build
-
-  # COMPLIANCE — dependency vulnerability scan (SOC2 CC7.1 / vuln mgmt, Google's OSV
-  # database). Its own job so a vuln finding is a distinct, visible gate. Runs the
-  # osv-scanner CLI directly instead of the reusable workflow: the reusable one always
-  # uploads SARIF to GitHub Code Scanning, which needs **Advanced Security** (a paid org
-  # feature) and hard-fails even when the scan is clean. The CLI gate is identical — it
-  # auto-discovers osv-scanner.toml (ignore list) and exits non-zero on un-ignored vulns.
-  # bun's TEXT lockfile (bun.lock, since the 1.3.12 migration) is fully OSV-parseable.
-  vuln-scan:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - name: OSV vuln-scan
-        run: docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/google/osv-scanner:v2.2.4 scan -r ./
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then base="$PR_BASE"; else base="$EVENT_BEFORE"; fi
+          if [ -z "${base:-}" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            base="HEAD^"
+          elif ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$base"
+          fi
+          echo "NX_BASE=$base" >> "$GITHUB_ENV"
+          echo "NX_HEAD=$GITHUB_SHA" >> "$GITHUB_ENV"
+      - name: Fast checks
+        run: bash ops/ci/fast.sh "$NX_BASE" "$NX_HEAD"
+      - name: Record affected deployables
+        env:
+          STACK_DEPLOYABLES_FILE: deployables.json
+        run: bun ops/ci/affected-deployables.ts "$NX_BASE" "$NX_HEAD"
+      - name: Save the deployment plan
+        uses: actions/upload-artifact@v7
+        with:
+          name: deployables
+          path: deployables.json
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,89 @@
+name: Release proof
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit to prove. Empty means main.
+        required: false
+        type: string
+
+concurrency:
+  group: release-proof-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18.4
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      NX_DAEMON: "false"
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha || github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
+      - name: Download the exact deployment plan
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v8
+        with:
+          name: deployables
+          path: .release-plan
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.12
+      - name: Install build tools
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Prepare a manual deployment plan
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          STACK_DEPLOYABLES_FILE: .release-plan/deployables.json
+        run: |
+          mkdir -p .release-plan
+          bun ops/ci/affected-deployables.ts HEAD^ HEAD
+      - name: Load the exact changed range
+        run: |
+          echo "NX_BASE=$(jq -r .base .release-plan/deployables.json)" >> "$GITHUB_ENV"
+          echo "NX_HEAD=$(jq -r .head .release-plan/deployables.json)" >> "$GITHUB_ENV"
+      - name: Dependency vulnerability scan
+        run: docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/google/osv-scanner:v2.2.4 scan -r ./
+      - name: Secret scan
+        run: >-
+          docker run --rm -v "$PWD:/repo" -w /repo
+          ghcr.io/gitleaks/gitleaks:v8.30.1
+          detect --source=/repo --config=/repo/.gitleaks.toml
+          --log-opts="HEAD^..HEAD" --no-banner --redact
+      - name: Full release proof
+        run: bash ops/ci/release-proof.sh "$NX_BASE" "$NX_HEAD"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: proved-deployables
+          path: .release-plan/deployables.json
+          if-no-files-found: error
+          retention-days: 30

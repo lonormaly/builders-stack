@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit",
     "check": "bun run src/providers.ts"
   },
   "dependencies": {

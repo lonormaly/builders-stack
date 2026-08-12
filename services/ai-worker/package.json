@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "bash ../../scripts/typecheck-native.sh -p tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",

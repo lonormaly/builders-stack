@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.4.0",
