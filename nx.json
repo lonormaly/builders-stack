@@ -10,7 +10,11 @@
       "!{projectRoot}/.storybook/**/*",
       "!{projectRoot}/**/*.stories.@(js|jsx|ts|tsx|mdx)"
     ],
-    "sharedGlobals": ["{workspaceRoot}/tsconfig.base.json", "{workspaceRoot}/eslint.config.mjs"]
+    "sharedGlobals": [
+      "{workspaceRoot}/tsconfig.base.json",
+      "{workspaceRoot}/eslint.config.mjs",
+      "{workspaceRoot}/scripts/typecheck-native.sh"
+    ]
   },
   "targetDefaults": {
     "build": {
