@@ -22,7 +22,7 @@ if ((${#boundary_files[@]})); then
   bunx nx show projects >/dev/null
   bunx eslint "${boundary_files[@]}" & pids+=("$!")
 fi
-bunx nx affected -t typecheck,test --base="$base" --head="$head" --parallel=3 --output-style=static & pids+=("$!")
+bunx nx affected -t typecheck,test --base="$base" --head="$head" --parallel=3 --output-style=static --verbose & pids+=("$!")
 bun run check:seo & pids+=("$!")
 bun run check:deployables & pids+=("$!")
 bun run check:typescript & pids+=("$!")
