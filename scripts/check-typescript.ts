@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 const ROOT = resolve(import.meta.dir, "..");
 const BUCKETS = ["apps", "services", "libs", "packages"];
 const STABLE_CHECKER = "bash ../../scripts/typecheck-native.sh";
+const checker = await readFile(resolve(ROOT, "scripts/typecheck-native.sh"), "utf8");
 const failures: string[] = [];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -31,6 +32,12 @@ for (const bucket of BUCKETS) {
       failures.push(`${relativePath}: remove @typescript/native-preview`);
     }
   }
+}
+
+if (!checker.includes("bunx --package typescript@7.0.2 tsc")) {
+  failures.push(
+    "scripts/typecheck-native.sh: run the pinned TypeScript 7 CLI without a root alias",
+  );
 }
 
 if (failures.length) {

@@ -7,6 +7,31 @@ Read this **before writing code**. It tells you where everything lives so you do
 
 ---
 
+## RULE ZERO — WORKTREES ARE TEMPORARY AND SHARE DEPENDENCIES
+
+Parallel work must use `ops/dev/worktree.sh <branch>`. Do not run raw
+`git worktree add`, copy `node_modules`, or symlink one checkout's complete
+`node_modules` into another checkout. The wrapper uses Bun 1.3.14's isolated
+global virtual store, so immutable packages are installed once and each
+worktree gets its own small tree of links. A whole-directory symlink is unsafe
+when branches change dependencies or an install mutates the directory.
+
+Every agent that creates a worktree owns its cleanup:
+
+- After the PR is merged or the task is abandoned, leave that checkout and run
+  `ops/dev/worktree.sh --rm <branch>` from the main checkout.
+- Run `ops/dev/worktree.sh --gc` before creating more worktrees when old work is
+  finished. The wrapper caps managed worktrees at eight; do not bypass the cap.
+- Never force removal. The wrapper refuses to remove a dirty worktree, a
+  worktree with a live process, or a branch whose patch is not in `origin/main`.
+  Preserve and finish that work instead.
+- Keep `package.json`, `.tool-versions`, CI's Bun version, and `bunfig.toml` in
+  sync. Do not override the isolated linker or disable `globalStore`.
+
+No cleanup request overrides the dirty, active, or unmerged-work checks.
+
+---
+
 ## 1. The mental model — the buckets
 
 This is a **bun-workspace monorepo** wrapped by **Nx** (task graph + enforced boundaries + generators). Every package has a role defined by _one question: is it served, and to whom?_
@@ -121,6 +146,10 @@ cp .env.example .env.local
 ./tilt_up.sh              # boots every app + service → dashboard at localhost:10380
 ```
 
+`bun install` requires Bun 1.3.14. The repo's `bunfig.toml` keeps immutable
+dependencies in Bun's shared global store; local package and trusted-script
+closures remain checkout-local for safety.
+
 - **Always `./tilt_up.sh`, never `tilt up` directly** — the script pins the Tilt UI to port **10380** so multiple Tilt projects coexist instead of fighting over the shared default. `./tilt_down.sh` stops it.
 - **No pinned service ports.** Every served role runs behind [Portless](https://github.com/vercel-labs/portless) at a stable named URL — `<svc>.stack.localhost:1355`:
 
@@ -178,6 +207,8 @@ Full law + our curated, scan-gated recommended list (adapt / link-only / reject 
 
 ## 8. Before you finish
 
+- A parallel checkout created for this task is removed with
+  `ops/dev/worktree.sh --rm <branch>` after its PR merges.
 - `bunx nx run-many -t typecheck` passes (all 14).
 - `bun run lint` (oxlint) clean and `bun run format:check` (oxfmt) clean.
 - `bun run lint:boundaries` clean — no new upward import, no deep import past a lib's barrel.

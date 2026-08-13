@@ -1,0 +1,6 @@
+[install]
+# Bun 1.3.14's global virtual store installs immutable packages once and links
+# every checkout to that shared copy. This keeps parallel worktrees isolated
+# without copying several gigabytes of node_modules into each one.
+linker = "isolated"
+globalStore = true
