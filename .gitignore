@@ -14,6 +14,7 @@ storybook-static/
 .turbo/
 .expo/
 coverage/
+.builders-stack-worktree
 
 # Env — ONE root .env.local is the source of truth (scripts/link-env.sh symlinks it
 # into each app/service). Never commit it; .env.example documents every key.

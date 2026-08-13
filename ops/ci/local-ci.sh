@@ -12,12 +12,13 @@ BASE="${BASE:-origin/main}"
 
 step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
 
-step "Install dependencies only when bun.lock changed"
-if [[ -f node_modules/.stack-lock ]] && cmp -s bun.lock node_modules/.stack-lock; then
-  echo "  dependencies already match bun.lock"
+step "Install dependencies only when the dependency setup changed"
+fingerprint="$(bun --version; cksum bun.lock bunfig.toml)"
+if [[ -f node_modules/.stack-install ]] && [[ "$(cat node_modules/.stack-install)" == "$fingerprint" ]]; then
+  echo "  dependencies already match bun.lock, bunfig.toml, and Bun"
 else
   bun install --frozen-lockfile --ignore-scripts
-  cp bun.lock node_modules/.stack-lock
+  printf '%s\n' "$fingerprint" > node_modules/.stack-install
 fi
 
 step "Secret scan (gitleaks)"

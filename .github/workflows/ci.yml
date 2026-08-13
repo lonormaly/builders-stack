@@ -31,14 +31,15 @@ jobs:
           git clean -ffdx -e node_modules/
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.12
-      - name: Install build tools only when bun.lock changed
+          bun-version: 1.3.14
+      - name: Install build tools only when the dependency setup changed
         run: |
-          if [ -f node_modules/.stack-lock ] && cmp -s bun.lock node_modules/.stack-lock; then
-            echo "dependencies already match bun.lock"
+          fingerprint="$(bun --version; cksum bun.lock bunfig.toml)"
+          if [ -f node_modules/.stack-install ] && [ "$(cat node_modules/.stack-install)" = "$fingerprint" ]; then
+            echo "dependencies already match bun.lock, bunfig.toml, and Bun"
           else
             bun install --frozen-lockfile --ignore-scripts
-            cp bun.lock node_modules/.stack-lock
+            printf '%s\n' "$fingerprint" > node_modules/.stack-install
           fi
       - name: Find the changed range
         env:

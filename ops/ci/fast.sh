@@ -26,6 +26,7 @@ bunx nx affected -t typecheck,test --base="$base" --head="$head" --parallel=3 --
 bun run check:seo & pids+=("$!")
 bun run check:deployables & pids+=("$!")
 bun run check:typescript & pids+=("$!")
+bun run check:worktrees & pids+=("$!")
 status=0
 for pid in "${pids[@]}"; do wait "$pid" || status=1; done
 ((status == 0))
