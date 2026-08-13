@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-exec "$ROOT/node_modules/typescript-7/bin/tsc" "$@"
+exec bunx --package typescript@7.0.2 tsc "$@"

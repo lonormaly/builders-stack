@@ -10,6 +10,21 @@ function requireText(path: string, pattern: RegExp, message: string) {
 }
 
 requireText("package.json", /"packageManager": "bun@1\.3\.14"/, "pin Bun 1.3.14");
+requireText(
+  "package.json",
+  /"typescript": "\^6\.0\.3"/,
+  "declare the TypeScript runtime Nx needs under the isolated linker",
+);
+requireText(
+  "package.json",
+  /"@types\/node": "\^26\.1\.0"/,
+  "declare the Node types required by the shared root tsconfig",
+);
+if (/"typescript-7"/.test(read("package.json"))) {
+  failures.push(
+    "package.json: a typescript-7 alias shadows Nx's TypeScript 6 runtime under Bun's isolated linker",
+  );
+}
 requireText(".tool-versions", /^bun 1\.3\.14$/m, "match the Bun packageManager pin");
 requireText("bunfig.toml", /^linker = "isolated"$/m, "use Bun's isolated linker");
 requireText("bunfig.toml", /^globalStore = true$/m, "enable Bun's global virtual store");
