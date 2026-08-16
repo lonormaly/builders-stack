@@ -1,0 +1,108 @@
+# Self-hosted GitHub Actions runners — the plain Kubernetes half.
+#
+# WHY SELF-HOSTED AT ALL. A GitHub org with the default 2,000 included Actions
+# minutes and stop-usage enabled kills EVERY workflow in 3-4 seconds once the
+# meter runs out — including the one that runs your database migrations. Jobs
+# that run on self-hosted runners never touch that meter. The second reason is
+# speed: a runner that keeps its checkout, node_modules and Nx cache between jobs
+# turns a five-minute cold gate into seconds (docs/stack/ci-performance.md).
+#
+# The Helm half is ops/deploy/install-arc.sh. Day-2 operations, the seeding
+# runbook and the security posture are docs/stack/github-runners.md.
+#
+# ── FILL THESE IN ────────────────────────────────────────────────────────────
+#  * the namespace / ServiceAccount / scale-set name below use `stack-` — rename
+#    them with your own prefix and keep install-arc.sh in step,
+#  * the ResourceQuota is sized for ONE warm runner on a small node; raise it
+#    with the node, not with hope,
+#  * the Secret at the bottom is created by a human, once, and is not in git.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stack-actions-runners
+---
+# ONE RUNNER'S WORTH, DELIBERATELY.
+#
+# A quota that names a resource makes declaring it MANDATORY for every container
+# in the namespace, init containers included — omit one and the pod is refused
+# with a message about the quota rather than about the missing field. That is why
+# every container in actions-runner-values.yaml carries a resources block, even
+# the two-second file copy.
+#
+# The limits ceiling must fit the CONFIGURED worst case, not the measured happy
+# path. `nx affected --parallel=3` with NODE_OPTIONS=--max-old-space-size=2048
+# has already promised 3 x 2Gi before a single job starts; a 3Gi container limit
+# fits the warm incremental gate and then OOMKills the first real full-graph run
+# — which GitHub reports as "runner lost communication", not as an OOM, and which
+# wedged the upstream queue for ten hours. Size for the promise.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: stack-actions-runners
+  namespace: stack-actions-runners
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+---
+# NO KUBERNETES CREDENTIAL IN THE RUNNER, and this is the real isolation.
+# These pods execute workflow code. The ServiceAccount is bound to no Role and no
+# ClusterRole, and actions-runner-values.yaml sets
+# `automountServiceAccountToken: false`, so no token is written into the pod at
+# all — a compromised build gets an empty API client rather than a scoped one.
+# A workflow that needs to deploy does it by reaching OUT (ssh, wrangler, kubectl
+# with its own credential from a job-scoped secret), never by calling the
+# Kubernetes API from inside the runner pod.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: stack-actions-runner
+  namespace: stack-actions-runners
+automountServiceAccountToken: false
+---
+# DECLARED, AND ON k3s's DEFAULT CNI, NOT ENFORCED. flannel does not implement
+# NetworkPolicy; this object applies cleanly and changes nothing until a
+# policy-capable CNI (Calico, Cilium, kube-router) is installed. Say that out
+# loud rather than counting it as a control: what actually holds today is that
+# runner pods hold no database credential and no Kubernetes token.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: stack-actions-runner-egress
+  namespace: stack-actions-runners
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    # DNS.
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    # Everything outside the cluster (GitHub, registries, package downloads).
+    # In-cluster addresses are deliberately absent: CI has no business reaching
+    # your production database over the pod network.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+#
+# ── THE SECRET A HUMAN CREATES ONCE, BY HAND ─────────────────────────────────
+#
+# Register a GitHub App (recommended) or mint a fine-grained PAT with
+# repository Administration: read + Actions: read/write, then:
+#
+#   kubectl -n stack-actions-runners create secret generic stack-runner-github-app \
+#     --from-literal=github_app_id="<app id>" \
+#     --from-literal=github_app_installation_id="<installation id>" \
+#     --from-file=github_app_private_key=/path/to/key.pem
+#
+# install-arc.sh refuses to run without it, so a missing secret fails with that
+# sentence instead of a crash-looping listener pod.

@@ -12,33 +12,74 @@ concurrency:
 permissions:
   contents: read
 
+# This is the commit gate, not the release rehearsal. It answers one question
+# quickly: did this change break the code it can affect? Database rebuilds,
+# production builds and repository-wide security scans run after this, in
+# release-proof.yml, on a clean hosted runner. Keeping the two answers separate
+# makes a bad commit fail fast without deleting any of the deeper proof.
+#
+# It runs on GitHub-hosted runners out of the box. Set the repository variable
+# FAST_RUNNER_LABEL to a warm self-hosted pool (ops/deploy/install-arc.sh) and
+# the same job keeps its checkout, node_modules, Bun cache and Nx cache between
+# runs — which is the difference between minutes and seconds. Unset the variable
+# during a cluster incident and CI falls straight back to ubuntu-latest.
 jobs:
   affected:
     runs-on: ${{ vars.FAST_RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: 5
+    # 15, NOT 5. A ROOT-input change (bun.lock, tsconfig.base.json, nx.json…)
+    # legitimately invalidates every cached target and has to rebuild the whole
+    # graph. Killing that at 5 minutes re-wedged the upstream runner twice: the
+    # job could never finish the cache rebuild it needed, so every following run
+    # started cold too. The ceiling exists to bound a HUNG job, not to race a
+    # legitimate rebuild. ops/ci/seed-cache.ts is what actually makes that case
+    # fast; this is the safety net behind it.
+    timeout-minutes: 15
     env:
       NX_DAEMON: "false"
       NX_MAX_CACHE_SIZE: 4GB
       NODE_OPTIONS: "--max-old-space-size=2048"
+      # The warm runner mounts a node-local hostPath here (see
+      # ops/deploy/k8s/actions-runner-values.yaml). Empty on hosted runners and
+      # on laptops, which turns the seeded remote cache off entirely.
+      STACK_CI_CACHE_ROOT: ${{ vars.FAST_RUNNER_LABEL && '/ci-cache' || '' }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
           clean: false
       - name: Clean source and keep warm dependencies
+        # Only tracked source may differ between runs. node_modules is expensive
+        # to rebuild and .nx holds this runner's own computed answers — deleting
+        # either turns every warm run back into a cold one.
         run: |
           git reset --hard HEAD
-          git clean -ffdx -e node_modules/
+          git clean -ffdx -e node_modules/ -e .nx/
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
       - name: Install build tools only when the dependency setup changed
         run: |
+          set -euo pipefail
+          if [ -n "${STACK_CI_CACHE_ROOT:-}" ]; then
+            export BUN_INSTALL_CACHE_DIR="$STACK_CI_CACHE_ROOT/bun"
+            mkdir -p "$BUN_INSTALL_CACHE_DIR"
+          fi
           fingerprint="$(bun --version; cksum bun.lock bunfig.toml)"
           if [ -f node_modules/.stack-install ] && [ "$(cat node_modules/.stack-install)" = "$fingerprint" ]; then
             echo "dependencies already match bun.lock, bunfig.toml, and Bun"
           else
-            bun install --frozen-lockfile --ignore-scripts
+            # SELF-HEALING, AND IT IS NOT DEFENSIVE PROGRAMMING. A killed install
+            # leaves a half-written node_modules that breaks Bun's linker with
+            # "failed to link package (copyfile) ENOENT" on every LATER install —
+            # the tree itself is the damage, and clearing Bun's package cache does
+            # not repair it. Without this, one interrupted job wedges a warm
+            # runner permanently and every following job fails identically. One
+            # wipe-and-retry turns that outage into a merely slow job.
+            if ! bun install --frozen-lockfile --ignore-scripts; then
+              echo "install failed — wiping node_modules and retrying once"
+              find . -name node_modules -type d -prune -exec rm -rf {} +
+              bun install --frozen-lockfile --ignore-scripts
+            fi
             printf '%s\n' "$fingerprint" > node_modules/.stack-install
           fi
       - name: Find the changed range
@@ -56,7 +97,7 @@ jobs:
           echo "NX_BASE=$base" >> "$GITHUB_ENV"
           echo "NX_HEAD=$GITHUB_SHA" >> "$GITHUB_ENV"
       - name: Fast checks
-        run: bash ops/ci/fast.sh "$NX_BASE" "$NX_HEAD"
+        run: bun ops/ci/fast.ts "$NX_BASE" "$NX_HEAD"
       - name: Record affected deployables
         env:
           STACK_DEPLOYABLES_FILE: deployables.json

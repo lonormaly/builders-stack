@@ -18,8 +18,11 @@ Framing follows [monorepo.tools](https://monorepo.tools):
 
 - **Local caching** — every `build`/`typecheck`/`lint`/`test` result is cached by input
   hash. Change one lib, only its dependents re-run; everything else replays instantly.
-- **Remote caching** — the same cache, shared across machines and CI. Add it later with
-  `nx connect` (Nx Cloud) — no config change needed here.
+- **Remote caching** — the same cache, shared across machines and CI. This repo ships
+  one: [`ops/ci/nx-cache.ts`](../ops/ci/nx-cache.ts) serves Nx 23's built-in HTTP
+  remote cache off a plain directory, so a dev machine can compute an expensive graph
+  and CI replays it ([seeding runbook](./stack/github-runners.md#seeding-the-nx-cache)).
+  Nx Cloud (`nx connect`) is the hosted alternative and needs no config change here.
 - **Distributed task execution** — Nx Cloud can fan a single `nx affected` run across
   multiple CI agents. Opt-in, same targets.
 - **Affected detection** — `nx affected` diffs the git range and runs tasks **only** for
@@ -142,7 +145,15 @@ owns running it.
 
 ## CI
 
-`.github/workflows/ci.yml` runs `nx affected -t lint typecheck build`.
-[`nrwl/nx-set-shas`](https://github.com/nrwl/nx-set-shas) derives the base/head SHAs
-(PR → merge-base with the target branch; push → last successful commit), so a PR only
-runs the projects it actually touched. bun stays the package manager; Nx is the runner.
+`.github/workflows/ci.yml` derives the changed range itself (PR → the base SHA;
+push → `github.event.before`) and hands it to [`ops/ci/fast.ts`](../ops/ci/fast.ts),
+which plans the smallest honest set of checks for that diff and runs
+`nx affected -t typecheck,test --parallel=3` as one of them. bun stays the package
+manager; Nx is the task runner.
+
+The deeper, slower proof — Postgres, security scans, full builds — runs after a
+green push to main in `release-proof.yml`, on a clean hosted runner.
+
+**How fast this actually is, and how to make it faster:**
+[`docs/stack/ci-performance.md`](./stack/ci-performance.md) — the measured record,
+the operating rules, and the warm-runner + seeded-cache path.

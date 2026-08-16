@@ -1,0 +1,178 @@
+# The runner pod spec for the `stack-cluster` scale set.
+#
+# ═══ WHY A VALUES FILE AND NOT A WALL OF --set ═══════════════════════════════
+#
+# `containerMode: dind` does NOT merge with a partial `template.spec`. The chart
+# either writes the whole pod spec itself, or — the moment you supply
+# `template.spec.containers` — yours REPLACES it entirely. Two installs failed
+# upstream learning this:
+#
+#   1. `--set template.spec.containers[0].resources...` with no name →
+#      `AutoscalingRunnerSet ... spec.template.spec.containers[1].name: Required value`
+#   2. adding `name=runner` → the CR was accepted and the pod was then rejected:
+#      `spec.containers[0].image: Required value, spec.initContainers[0].image: Required value`
+#
+# The second is the informative one: naming it `runner` did not merge the block
+# into the chart's runner container, it replaced the container list with a single
+# entry that had a name and nothing else. So the full spec has to be written out,
+# and a file is the honest place for it.
+#
+# Everything below the `resources:` blocks and the cache volumes is copied from
+# the chart's own documented dind spec:
+#   helm show values oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set --version 0.14.0
+# (the commented `containerMode.type=dind` block). If ARC is upgraded, re-read
+# that block and diff it against this file — this is a copy, and copies rot.
+#
+# ═══ EVERY CONTAINER DECLARES RESOURCES, AND IT IS NOT OPTIONAL ══════════════
+#
+# The namespace ResourceQuota (ops/deploy/k8s/actions-runner.yaml) names
+# requests AND limits for cpu and memory. A quota that names a resource makes
+# declaring it MANDATORY for every container in the namespace, init containers
+# included. Omit one and the pod is refused with a message about the quota, not
+# about the missing field.
+
+template:
+  spec:
+    serviceAccountName: stack-actions-runner
+    automountServiceAccountToken: false
+
+    # The checkout, node_modules and Nx state below are hostPath directories. A
+    # runner scheduled on a different node sees empty directories with the same
+    # names, which turns a warm seven-second check back into a cold one.
+    # install-arc.sh requires exactly one node to carry this label, so every
+    # ephemeral runner returns to the same cache owner.
+    nodeSelector:
+      stack.io/ci-cache: "true"
+
+    # hostPath directories are created as root:root 0755. The runner is uid
+    # 1001, so without this one-time ownership step every documented local cache
+    # is silently read-only and each ephemeral pod starts cold.
+    initContainers:
+      - name: init-runner-caches
+        image: busybox:1.37.0
+        # Only the mount roots need changing. Everything written below them
+        # inherits the runner user; recursively walking a multi-gigabyte BuildKit
+        # cache on every pod start would erase the speedup.
+        command: ["sh", "-c", "chown 1001:1001 /buildx-cache /ci-cache /runner-work"]
+        volumeMounts:
+          - { name: buildx-cache, mountPath: /buildx-cache }
+          - { name: ci-cache, mountPath: /ci-cache }
+          - { name: work, mountPath: /runner-work }
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits: { cpu: 100m, memory: 64Mi }
+
+      # The required job must not spend four seconds downloading and unpacking
+      # Bun. This runs before the idle runner registers with GitHub, so job time
+      # starts with the repository's exact package manager already on PATH. Keep
+      # the version equal to package.json's `packageManager` pin.
+      - name: install-bun
+        image: oven/bun:1.3.14
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 0
+          runAsUser: 0
+        command: ["/bin/sh", "-ceu"]
+        args:
+          - |
+            test "$(/usr/local/bin/bun --version)" = "1.3.14"
+            cp /usr/local/bin/bun /runner-tools/bun
+            chmod 0555 /runner-tools/bun
+            ln -sf bun /runner-tools/bunx
+        volumeMounts:
+          - { name: runner-tools, mountPath: /runner-tools }
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits: { cpu: 100m, memory: 64Mi }
+
+    containers:
+      - name: runner
+        # Pinned. A floating `:latest` on the binary that runs CI is a
+        # supply-chain hole, and it also makes "what changed?" unanswerable
+        # during an incident. Bump it deliberately.
+        image: ghcr.io/actions/actions-runner:2.336.0
+        command: ["/bin/bash", "-lc"]
+        args:
+          - |
+            # eslint launches through "#!/usr/bin/env node". The runner image
+            # already ships node under externals; link it into /runner-tools
+            # (already first on PATH) instead of downloading anything. Without
+            # this, every eslint-based boundary check fails with
+            # "/usr/bin/env: 'node': No such file or directory" — and `grep -v
+            # alpine` matters, because the alpine build of that node is also
+            # under externals and cannot run on this glibc image.
+            node_bin="$(ls -d /home/runner/externals/node*/bin/node 2>/dev/null | grep -v alpine | sort | tail -1)"
+            [ -n "$node_bin" ] && ln -sf "$node_bin" /runner-tools/node
+            # Warm TypeScript's checked state before GitHub can assign work. It
+            # is validated again inside the job after checkout; this only moves
+            # cold initialization outside the measured merge gate.
+            #
+            # THE WAIT IS BOUNDED. An unbounded `until` here once looped forever
+            # on a dangling node_modules/.bin/nx (a bun install killed mid-run):
+            # the runner never registered, every job queued, and no job could
+            # ever run the install that would repair it — a silent, total,
+            # ten-hour outage. The job re-validates dependencies after checkout,
+            # so on timeout the right move is to register anyway and let the job
+            # repair the checkout. A cold slow job beats a dead queue.
+            root="$(ls -d /home/runner/_work/*/* 2>/dev/null | head -1)"
+            waited=0
+            until [ -n "$root" ] && [ -x "$root/node_modules/.bin/nx" ] || [ "$waited" -ge 120 ]; do
+              sleep 1; waited=$((waited + 1)); root="$(ls -d /home/runner/_work/*/* 2>/dev/null | head -1)"
+            done
+            if [ -n "$root" ] && [ -x "$root/node_modules/.bin/nx" ]; then
+              cd "$root"
+              bun --filter @stack/web typecheck >/dev/null 2>&1 || true
+            fi
+            exec /home/runner/run.sh
+        env:
+          - { name: DOCKER_HOST, value: unix:///var/run/docker.sock }
+          - { name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS, value: "120" }
+          - name: PATH
+            value: /runner-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        volumeMounts:
+          - { name: work, mountPath: /home/runner/_work }
+          # `dind-sock` is supplied by the chart when containerMode.type=dind —
+          # it appends the sidecar and its volumes to what this file declares.
+          # Mount it, do not declare it below.
+          - { name: dind-sock, mountPath: /var/run }
+          # THE BUILDX LAYER CACHE, MOUNTED INTO THE RUNNER AND NOT INTO DIND.
+          # `--cache-to type=local` is written by the buildx CLIENT, and the
+          # client is the runner process. Mount it on dind instead and the cache
+          # silently writes nowhere useful.
+          - { name: buildx-cache, mountPath: /buildx-cache }
+          # Bun's package downloads and the seeded Nx answers live here, and the
+          # workflow points STACK_CI_CACHE_ROOT at it.
+          - { name: ci-cache, mountPath: /ci-cache }
+          - { name: runner-tools, mountPath: /runner-tools }
+        resources:
+          # The Docker sidecar receives the namespace's default request, so this
+          # makes the complete always-warm pod reserve about 2 CPUs. Request what
+          # the node can actually spare — an unschedulable runner is a dead queue.
+          requests: { cpu: 1750m, memory: 512Mi }
+          # 4608Mi, NOT 3Gi. `nx affected --parallel=3` with
+          # NODE_OPTIONS=--max-old-space-size=2048 promises three 2Gi heaps
+          # before the job starts. 3Gi fits the warm incremental gate and then
+          # OOMKills the first full-graph run, which GitHub reports as "runner
+          # lost communication". Size the limit to the configured worst case.
+          limits: { cpu: 3, memory: 4608Mi }
+
+    volumes:
+      # hostPath, deliberately: the whole value of a self-hosted runner here is
+      # that the caches SURVIVE the pod. An emptyDir would be discarded with
+      # every ephemeral runner and every build would start cold, which is the
+      # cost this exists to remove. DirectoryOrCreate so a fresh node makes them
+      # rather than failing to schedule.
+      - name: buildx-cache
+        hostPath: { path: /var/lib/stack-buildx-cache, type: DirectoryOrCreate }
+      - name: ci-cache
+        hostPath: { path: /var/lib/stack-ci-cache, type: DirectoryOrCreate }
+      - name: runner-tools
+        emptyDir: {}
+      # ARC normally puts the checkout on emptyDir, deleting the linked
+      # dependency tree after every job. The pool is intentionally ONE runner, so
+      # this host directory can safely keep the checkout and node_modules warm.
+      # actions/checkout still resets tracked files before every run.
+      - name: work
+        hostPath: { path: /var/lib/stack-runner-work, type: DirectoryOrCreate }

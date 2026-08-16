@@ -28,8 +28,10 @@ else
   echo "  gitleaks not installed — skipped locally (CI runs it). brew install gitleaks"
 fi
 
-step "Parallel affected checks"
-bash ops/ci/fast.sh "$BASE" HEAD
+step "Planned affected checks"
+# The same planner CI runs. STACK_CI_CACHE_ROOT is unset here, so this uses the
+# plain local Nx cache and never reaches for the runner's seeded answers.
+bun ops/ci/fast.ts "$BASE" HEAD
 
 step "Dependency vuln scan (osv-scanner)"
 if command -v osv-scanner >/dev/null 2>&1; then

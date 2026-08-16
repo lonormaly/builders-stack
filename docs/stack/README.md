@@ -29,3 +29,5 @@ The files remain on disk; they just stop being tracked in your fork. See
 - [`email.md`](./email.md) — `@stack/email`: Resend + React Email with typed, previewable templates and a `sendEmail()` sender.
 - [`payments.md`](./payments.md) — the `PaymentProvider` adapter interface: swap or add a provider (Creem/Dodo/…) as a one-file change.
 - [`agent-skills.md`](./agent-skills.md) — the "vet before you install" law for agent skills/MCPs, plus a curated, scan-gated recommended list.
+- [`ci-performance.md`](./ci-performance.md) — how CI stays in seconds: the change-class planner, the seeded Nx cache, bundle-before-Docker, and the operating rules that keep it true.
+- [`github-runners.md`](./github-runners.md) — the optional warm self-hosted runner pool: install, seeding runbook, and the traps that cost real hours.

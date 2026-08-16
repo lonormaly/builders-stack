@@ -10,7 +10,7 @@ const skill = readFileSync(
   "utf8",
 );
 const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
-const fastCi = readFileSync(new URL("../ci/fast.sh", import.meta.url), "utf8");
+const fastCi = readFileSync(new URL("../ci/fast.ts", import.meta.url), "utf8");
 const sizeGate = readFileSync(
   new URL("../../scripts/check-image-size.ts", import.meta.url),
   "utf8",
@@ -39,11 +39,15 @@ describe("deployment contract", () => {
     );
     expect(sizeGate).toContain("const LIMIT_MB = 300");
   });
-  test("bun.lock is the only warm dependency authority", () => {
-    expect(ci).toContain("node_modules/.stack-lock");
-    expect(ci).toContain("cmp -s bun.lock node_modules/.stack-lock");
+  // The install is skipped ONLY on a fingerprint of everything that decides what
+  // gets installed — never on node_modules merely existing. A warm runner that
+  // trusts an existing tree runs the next job against the previous PR's
+  // dependencies and every result it produces is a lie.
+  test("the dependency setup is the only warm-install authority", () => {
+    expect(ci).toContain('fingerprint="$(bun --version; cksum bun.lock bunfig.toml)"');
+    expect(ci).toContain("node_modules/.stack-install");
     expect(ci).toContain("bun install --frozen-lockfile --ignore-scripts");
-    expect(ci).toContain("cp bun.lock node_modules/.stack-lock");
+    expect(ci).toContain("printf '%s\\n' \"$fingerprint\" > node_modules/.stack-install");
   });
   test("future services must register a deployment decision", () => {
     expect(skill).toContain("ops/deploy/deployables.json");
@@ -56,7 +60,7 @@ describe("deployment contract", () => {
     expect(typeScriptGate).toContain("Stable TypeScript 7 checks every workspace");
     expect(skill).toContain("scripts/typecheck-native.sh");
     expect(addLibSkill).toContain("scripts/typecheck-native.sh");
-    expect(ci).toContain("ops/ci/fast.sh");
+    expect(ci).toContain("ops/ci/fast.ts");
     expect(fastCi).toContain("check:typescript");
   });
 });

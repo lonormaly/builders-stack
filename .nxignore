@@ -1,0 +1,27 @@
+# Files Nx must not treat as workspace input.
+#
+# .gitignore — AND THE REASON IS NOT WHAT IT LOOKS LIKE.
+#
+# Nx's file walker honours gitignore rules, and that includes the developer's
+# GLOBAL one (core.excludesFile). A machine whose global ignore file lists
+# `.gitignore` itself never lets Nx see the repo's `.gitignore` — while a Linux
+# CI runner, which usually has no global ignore file, sees it and folds it into
+# the hash of EVERY task.
+#
+# Measured on the upstream project this came from (16 Aug 2026) by dumping the
+# hash plan for all 70 lint+typecheck tasks on both machines: the plans were
+# identical except for `file:.gitignore`, present on Linux and absent on macOS,
+# on every single task. One phantom input is enough to change every task hash,
+# which makes a cache entry computed on a laptop unusable on the runner — and
+# that exchange is the whole point of ops/ci/seed-cache.ts.
+#
+# Declaring it in nx.json's sharedGlobals does NOT fix this: a machine whose
+# walker cannot see the file resolves the entry to nothing, so the laptop stays
+# where it is and the runner counts it twice. Excluding it works from both ends,
+# because "do not look at this" is something both machines can obey.
+#
+# What it costs: editing `.gitignore` no longer invalidates cached tasks. That is
+# already how a laptop with a global ignore behaves, so this makes CI agree with
+# it. Run `nx reset` after a `.gitignore` change that is meant to change what Nx
+# can see.
+.gitignore
