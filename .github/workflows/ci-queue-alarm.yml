@@ -1,0 +1,80 @@
+name: CI queue alarm
+
+# A DEAD SELF-HOSTED RUNNER FAILS SILENTLY. Jobs queue forever, no check ever
+# goes red, and GitHub cancels them 24 hours later. Upstream that ran for TEN
+# HOURS before a human noticed. This workflow is the scream: it runs on GitHub's
+# own runners — never on the pool it watches — and posts when any run has been
+# queued longer than the threshold. It says the queue is sick; it heals nothing.
+#
+# It costs nothing until you have a pool: the job is skipped entirely unless the
+# repository variable FAST_RUNNER_LABEL is set, and a skipped job bills no
+# minutes. It also stays quiet unless ALERT_WEBHOOK_URL is set.
+#
+# ── FILL THESE IN ────────────────────────────────────────────────────────────
+#   secret  ALERT_WEBHOOK_URL   Slack (or any) incoming webhook that takes
+#                               {"text": "..."}. No secret, no alert.
+#   var     FAST_RUNNER_LABEL   the self-hosted pool CI uses. Set by
+#                               ops/deploy/install-arc.sh's final instructions.
+#   RUNBOOK below               where an on-call human should look first.
+
+on:
+  schedule:
+    # Every 10 minutes. GitHub delays scheduled runs under load; the alarm
+    # tolerates that — a stuck queue stays stuck.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Post a test alert to prove delivery"
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+
+jobs:
+  watch:
+    # No self-hosted pool, nothing to watch, no minutes spent.
+    if: vars.FAST_RUNNER_LABEL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+      QUEUE_LIMIT_MINUTES: "10"
+      RUNBOOK: "Check the runner pod: kubectl -n stack-actions-runners get pods. Runbook: docs/stack/github-runners.md"
+      TEST_FIRE: ${{ inputs.test && '1' || '' }}
+    steps:
+      - name: Check queue age and alert
+        run: |
+          set -euo pipefail
+          if [ -z "${ALERT_WEBHOOK_URL:-}" ]; then
+            echo "no ALERT_WEBHOOK_URL secret — nothing to alert to"
+            exit 0
+          fi
+          if [ -n "$TEST_FIRE" ]; then
+            curl -sf -X POST -H 'Content-type: application/json' \
+              --data '{"text":":bell: CI queue alarm — test fire. Delivery works."}' \
+              "$ALERT_WEBHOOK_URL"
+            echo "test alert posted"
+            exit 0
+          fi
+          now=$(date -u +%s)
+          limit=$((QUEUE_LIMIT_MINUTES * 60))
+          # gh api's --jq does NOT accept jq flags like --argjson; fetch raw and
+          # let real jq do the arithmetic. A deliberate trip test of this alarm
+          # is what found that — the detection branch had never run.
+          stuck=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=queued&per_page=20" \
+            | jq --argjson now "$now" --argjson limit "$limit" \
+            '[.workflow_runs[] | select(($now - (.created_at | fromdateiso8601)) > $limit)
+              | {name, url: .html_url, minutes: ((($now - (.created_at | fromdateiso8601)) / 60) | floor)}]')
+          count=$(printf '%s' "$stuck" | jq length)
+          if [ "$count" -eq 0 ]; then
+            echo "queue healthy"
+            exit 0
+          fi
+          lines=$(printf '%s' "$stuck" | jq -r '.[] | "• <\(.url)|\(.name)> — queued \(.minutes) min"')
+          header=":rotating_light: *CI queue is stuck* — $count run(s) waiting longer than ${QUEUE_LIMIT_MINUTES} min. The self-hosted runner is probably down."
+          payload=$(jq -n --arg h "$header" --arg l "$lines" --arg r "$RUNBOOK" '{text: ($h + "\n" + $l + "\n" + $r)}')
+          curl -sf -X POST -H 'Content-type: application/json' --data "$payload" "$ALERT_WEBHOOK_URL"
+          echo "alert posted for $count stuck run(s)"
