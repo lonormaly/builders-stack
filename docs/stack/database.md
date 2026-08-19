@@ -27,6 +27,38 @@ Neon is serverless, managed Postgres 16 that separates storage from compute. Thr
 
 **The honest caveat:** the free tier's **compute (CU-hours) is the ceiling, not storage** — an always-on/polled DB burns the monthly 100 CU-hours in ~4 days. That's not a Neon flaw, it's the thing [`run-lean-on-neon`](../../agents/skills/run-lean-on-neon/SKILL.md) exists to manage (don't poll, cache the session, let it sleep).
 
+### You do not need Hyperdrive in front of Neon
+
+If you deploy this stack's services as **Cloudflare Workers**, the reflex is to add a [Hyperdrive](https://developers.cloudflare.com/hyperdrive/) config so the Workers "don't storm the database." With Neon, don't. It buys nothing and costs a provisioning step, a 32-character config id pasted into every `wrangler.toml`, and one more service in the path of every query.
+
+Two reasons, both checkable rather than argued:
+
+**Neon's pooled endpoint already _is_ PgBouncer.** The `-pooler` host in your connection string is a managed connection pooler. Putting Hyperdrive in front of it stacks a second pooling layer on one you already have.
+
+**A Worker can dial Neon directly over TCP, transactions included.** The usual worry is that only Neon's HTTP driver (`neon()` from `@neondatabase/serverless`) works on Workers, and it can't do interactive transactions — its `transaction()` takes a batch of statements with nowhere to branch between them. That matters the moment you have a real ledger: read a balance, decide in application code, then write, all under one lock. But this stack's `postgres.js` driver works on Workers as-is with `nodejs_compat`, interactive transactions and all:
+
+```ts
+// wrangler.toml: compatibility_flags = ["nodejs_compat"] — no [[hyperdrive]] block
+import postgres from "postgres";
+
+export default {
+  async fetch(_req: Request, env: { DATABASE_URL: string }) {
+    const sql = postgres(env.DATABASE_URL, { max: 1, fetch_types: false });
+    const doubled = await sql.begin(async (tx) => {
+      const [row] = await tx`select 21 as half`;
+      return (row!.half as number) * 2; // decided in JS, mid-transaction
+    });
+    return Response.json({ doubled }); // → { "doubled": 42 }
+  },
+};
+```
+
+`fetch_types: false` matters: `postgres.js` otherwise runs a type-introspection query on connect, which is a wasted round trip on a driver that gets a fresh connection per invocation.
+
+**When Hyperdrive _is_ the right answer:** an external Postgres with no pooler of its own — self-hosted on a VPS, or RDS. That's the case the [Cloudflare D1 section](#cloudflare-d1--the-edge-native-option-sqlite-not-postgres) below points at. It is not the Neon case.
+
+_(Written after removing Hyperdrive from a production Workers app that never needed it. The removal was five `[[hyperdrive]]` tables, one provisioning step, and a rename of `env.HYPERDRIVE.connectionString` → `env.DATABASE_URL`.)_
+
 ---
 
 ## Bucket A — swap the Postgres host (keep Drizzle)
