@@ -81,6 +81,47 @@ Served roles get stable named URLs via [Portless](https://github.com/vercel-labs
 
 See [`docs/portless.md`](./docs/portless.md) for the full convention.
 
+## Parallel agents without duplicated installs
+
+Create every agent checkout through the managed command:
+
+```bash
+ops/dev/worktree.sh codex/my-task
+ops/dev/worktree.sh --rm codex/my-task   # after its patch reaches main
+ops/dev/worktree.sh --gc                 # reconcile finished worktrees after a crash
+```
+
+The repository pins Worktree Zero in [`.wt0-version`](./.wt0-version). The
+launcher downloads that exact macOS or Linux binary, verifies its SHA-256 file,
+then reuses it from the machine cache. Agents do not install an arbitrary moving
+release.
+
+Native Git already shares repository history, and Bun's global store already
+shares most packages. Native Git still writes another visible copy of every
+tracked file, while Bun correctly leaves packages changed by install scripts
+inside each worktree. Worktree Zero shares both remaining groups with private
+copy-on-write files.
+
+Builders Stack commit `9c57d227` was measured with Bun 1.3.14 on fresh isolated
+APFS volumes:
+
+| Complete worktrees | Native Git + Bun | Worktree Zero + Bun |
+| -----------------: | ---------------: | ------------------: |
+|                  1 |       383.74 MiB |          391.38 MiB |
+|                  2 |       767.17 MiB |          401.82 MiB |
+|                  4 |     1,532.74 MiB |          421.27 MiB |
+
+One Worktree Zero runtime pays for the sealed environment, so it is not smaller
+at one worktree. After that, each native worktree added about 383 MiB while each
+managed worktree added about 10 MiB. Four worktrees used 72.5% less physical
+space. The same Btrfs test used 1,427.42 MiB natively and 564.60 MiB through
+Worktree Zero, 60.4% less.
+
+Finder and `du` still show the complete logical files in every directory. The
+figures above are filesystem free-space deltas, which measure actual physical
+allocation. See the full reproducible method in the
+[Worktree Zero prepared-environment guide](https://github.com/lonormaly/worktree-zero/blob/main/docs/prepared-environments.md).
+
 ## The map — five buckets, defined by exposure
 
 Four buckets are **what the system _is_**; the fifth is **how you _operate_ it**.

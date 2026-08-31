@@ -47,6 +47,7 @@ function setupRepository() {
     join(repo, "package.json"),
     `${JSON.stringify({ name: "fixture", private: true, packageManager: "bun@1.3.14" }, null, 2)}\n`,
   );
+  writeFileSync(join(repo, ".wt0-version"), "0.1.5\n");
   writeFileSync(join(repo, "bun.lock"), '{\n  "lockfileVersion": 1\n}\n');
   writeFileSync(join(repo, "bunfig.toml"), '[install]\nlinker = "isolated"\nglobalStore = true\n');
   writeFileSync(join(repo, ".gitignore"), "node_modules/\n.builders-stack-worktree\n.env.local\n");
@@ -69,6 +70,7 @@ exit 64
     `#!/usr/bin/env bash
 set -euo pipefail
 case "\${1:-}" in
+  --version) printf 'wt0 0.1.5\n'; exit 0 ;;
   --help) exit 0 ;;
   create)
     branch="$2"; shift 2; target=""; base="HEAD"
@@ -76,16 +78,19 @@ case "\${1:-}" in
       case "$1" in
         --path) target="$2"; shift 2 ;;
         --base) base="$2"; shift 2 ;;
-        --ephemeral) shift ;;
+        --ephemeral | --require-cow) shift ;;
         *) exit 64 ;;
       esac
     done
     git worktree add -b "$branch" "$target" "$base" >/dev/null
     ;;
+  prepare)
+    target="$2"
+    (cd "$target" && bun install --frozen-lockfile)
+    ;;
   doctor) exit 0 ;;
   remove)
-    branch="$2"
-    target="$(git worktree list --porcelain | awk -v wanted="refs/heads/$branch" '$1 == "worktree" { path = substr($0, 10) } $1 == "branch" && $2 == wanted { print path; exit }')"
+    target="$2"
     git worktree remove "$target"
     ;;
   prune) git worktree prune ;;
@@ -111,6 +116,7 @@ esac
     env: {
       PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
       FAKE_SHARED_STORE: join(fixture, "shared-store"),
+      WORKTREE_ZERO_BIN: join(fakeBin, "wt0"),
     },
     managedRoot: join(dirname(repo), "repo-worktrees"),
   };

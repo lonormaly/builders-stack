@@ -42,8 +42,9 @@ This is a bun-workspace monorepo. Read this before writing code; it tells you wh
   file-touching agent. Never run raw `git worktree add`, copy `node_modules`, or
   symlink a complete `node_modules` from another checkout. The wrapper requires
   Bun 1.3.14 and uses the isolated global virtual store, so packages are shared
-  safely without sharing a mutable dependency directory. Source checkout and
-  teardown are provided by the single `wt0` binary from Worktree Zero. After the PR merges or
+  safely without sharing a mutable dependency directory. Source checkout,
+  prepared dependencies, and teardown use the checksum-verified `wt0` version
+  pinned in `.wt0-version`. After the PR merges or
   the task is abandoned, leave the checkout and run
   `ops/dev/worktree.sh --rm <branch>` from main. Run `--gc` for finished
   worktrees. Never bypass its eight-worktree cap or force removal: dirty,

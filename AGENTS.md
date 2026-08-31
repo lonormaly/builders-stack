@@ -17,8 +17,8 @@ worktree gets its own small tree of links. A whole-directory symlink is unsafe
 when branches change dependencies or an install mutates the directory.
 The wrapper delegates source checkout, physical copy-on-write, runtime
 inspection, removal, and pruning to [Worktree Zero](https://github.com/lonormaly/worktree-zero).
-Install the `wt0` binary before starting parallel work; do not substitute a
-second local worktree implementation.
+The repository pins and checksum-verifies the binary through `ops/dev/wt0.sh`;
+do not install a moving release or substitute a second worktree implementation.
 
 Every agent that creates a worktree owns its cleanup:
 
