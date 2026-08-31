@@ -13,7 +13,8 @@ BASE_REF="${BUILDERS_STACK_WORKTREE_BASE:-origin/main}"
 MAX_WORKTREES="${BUILDERS_STACK_MAX_WORKTREES:-8}"
 MAIN_ROOT="$(git -C "$ROOT" worktree list --porcelain | awk '$1 == "worktree" { print substr($0, 10); exit }')"
 WORKTREES_DIR="$(dirname "$MAIN_ROOT")/$(basename "$MAIN_ROOT")-worktrees"
-WT0_BIN="${WORKTREE_ZERO_BIN:-wt0}"
+WT0_BIN="${WORKTREE_ZERO_BIN:-$ROOT/ops/dev/wt0.sh}"
+WT0_VERSION="$(tr -d '[:space:]' < "$ROOT/.wt0-version")"
 
 usage() {
   sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'
@@ -43,9 +44,9 @@ require_supported_bun() {
 }
 
 require_worktree_zero() {
-  command -v "$WT0_BIN" >/dev/null 2>&1 ||
-    die 'Worktree Zero (wt0) is required. Install it from https://github.com/lonormaly/worktree-zero.'
-  "$WT0_BIN" --help >/dev/null 2>&1 || die "$WT0_BIN is present but cannot start"
+  [[ -x "$WT0_BIN" ]] || die "Worktree Zero launcher is not executable: $WT0_BIN"
+  [[ "$("$WT0_BIN" --version 2>/dev/null || true)" == "wt0 $WT0_VERSION" ]] ||
+    die "Worktree Zero $WT0_VERSION is required"
 }
 
 managed_path_for_branch() {
@@ -111,7 +112,7 @@ remove_branch_worktree() {
   # only ignored files. A local .env or any unknown ignored file stops cleanup.
   git -C "$dir" clean -ffd -- .builders-stack-worktree node_modules
   git -C "$dir" clean -ffdX
-  "$WT0_BIN" remove "$branch"
+  "$WT0_BIN" remove "$dir"
   rmdir "$WORKTREES_DIR" 2>/dev/null || true
   printf 'removed %s\n' "$dir"
   printf 'kept branch %s; delete it separately with: git branch -d %q\n' "$branch" "$branch"
@@ -140,13 +141,13 @@ case "${1:-}" in
     ;;
   --gc)
     gc_managed_worktrees
-    "$WT0_BIN" prune
+    (cd "$ROOT" && "$WT0_BIN" prune)
     exit 0
     ;;
   --rm)
     [[ -n "${2:-}" ]] || usage
     remove_branch_worktree "$2"
-    "$WT0_BIN" prune
+    (cd "$ROOT" && "$WT0_BIN" prune)
     exit 0
     ;;
   -*) die "unknown option: $1" ;;
@@ -175,7 +176,7 @@ if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
   die "$BRANCH already exists; wt0 safe branch-resume support must land before this wrapper can reopen it"
 fi
 mkdir -p "$WORKTREES_DIR"
-"$WT0_BIN" create "$BRANCH" --path "$DIR" --base "$BASE_REF" --ephemeral >/dev/null
+"$WT0_BIN" create "$BRANCH" --path "$DIR" --base "$BASE_REF" --require-cow --ephemeral >/dev/null
 
 cat >"$DIR/.builders-stack-worktree" <<EOF
 # Created by ops/dev/worktree.sh. The wrapper only removes this checkout when it
@@ -183,9 +184,9 @@ cat >"$DIR/.builders-stack-worktree" <<EOF
 BRANCH=$BRANCH
 EOF
 
-printf 'installing dependencies through Bun %s shared global store\n' "$(expected_bun_version)"
-if ! (cd "$DIR" && bun install --frozen-lockfile); then
-  printf 'install failed; worktree kept for inspection at %s\n' "$DIR" >&2
+printf 'preparing dependencies through Worktree Zero and Bun %s\n' "$(expected_bun_version)"
+if ! "$WT0_BIN" prepare "$DIR" --apply; then
+  printf 'environment preparation failed; worktree kept for inspection at %s\n' "$DIR" >&2
   exit 1
 fi
 
