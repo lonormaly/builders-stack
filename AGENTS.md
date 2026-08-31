@@ -15,6 +15,10 @@ Parallel work must use `ops/dev/worktree.sh <branch>`. Do not run raw
 global virtual store, so immutable packages are installed once and each
 worktree gets its own small tree of links. A whole-directory symlink is unsafe
 when branches change dependencies or an install mutates the directory.
+The wrapper delegates source checkout, physical copy-on-write, runtime
+inspection, removal, and pruning to [Worktree Zero](https://github.com/lonormaly/worktree-zero).
+Install the `wt0` binary before starting parallel work; do not substitute a
+second local worktree implementation.
 
 Every agent that creates a worktree owns its cleanup:
 

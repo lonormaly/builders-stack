@@ -13,6 +13,7 @@ BASE_REF="${BUILDERS_STACK_WORKTREE_BASE:-origin/main}"
 MAX_WORKTREES="${BUILDERS_STACK_MAX_WORKTREES:-8}"
 MAIN_ROOT="$(git -C "$ROOT" worktree list --porcelain | awk '$1 == "worktree" { print substr($0, 10); exit }')"
 WORKTREES_DIR="$(dirname "$MAIN_ROOT")/$(basename "$MAIN_ROOT")-worktrees"
+WT0_BIN="${WORKTREE_ZERO_BIN:-wt0}"
 
 usage() {
   sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'
@@ -39,6 +40,12 @@ require_supported_bun() {
   actual="$(bun --version 2>/dev/null || true)"
   [[ -n "$expected" ]] || die 'package.json has no bun packageManager pin'
   [[ "$actual" == "$expected" ]] || die "Bun $expected is required; found ${actual:-none}. Upgrade before creating a worktree."
+}
+
+require_worktree_zero() {
+  command -v "$WT0_BIN" >/dev/null 2>&1 ||
+    die 'Worktree Zero (wt0) is required. Install it from https://github.com/lonormaly/worktree-zero.'
+  "$WT0_BIN" --help >/dev/null 2>&1 || die "$WT0_BIN is present but cannot start"
 }
 
 managed_path_for_branch() {
@@ -104,7 +111,7 @@ remove_branch_worktree() {
   # only ignored files. A local .env or any unknown ignored file stops cleanup.
   git -C "$dir" clean -ffd -- .builders-stack-worktree node_modules
   git -C "$dir" clean -ffdX
-  git -C "$ROOT" worktree remove "$dir"
+  "$WT0_BIN" remove "$branch"
   rmdir "$WORKTREES_DIR" 2>/dev/null || true
   printf 'removed %s\n' "$dir"
   printf 'kept branch %s; delete it separately with: git branch -d %q\n' "$branch" "$branch"
@@ -133,13 +140,13 @@ case "${1:-}" in
     ;;
   --gc)
     gc_managed_worktrees
-    git -C "$ROOT" worktree prune
+    "$WT0_BIN" prune
     exit 0
     ;;
   --rm)
     [[ -n "${2:-}" ]] || usage
     remove_branch_worktree "$2"
-    git -C "$ROOT" worktree prune
+    "$WT0_BIN" prune
     exit 0
     ;;
   -*) die "unknown option: $1" ;;
@@ -155,6 +162,7 @@ DIR="$WORKTREES_DIR/$SLUG"
 git -C "$ROOT" rev-parse --verify "$BASE_REF^{commit}" >/dev/null 2>&1 ||
   die "$BASE_REF is missing; fetch it before creating a worktree"
 require_supported_bun
+require_worktree_zero
 
 managed_count=0
 if [[ -d "$WORKTREES_DIR" ]]; then
@@ -163,12 +171,11 @@ fi
 ((managed_count < MAX_WORKTREES)) ||
   die "$managed_count managed worktrees already exist (limit $MAX_WORKTREES); finish one and run $SCRIPT --gc"
 
-mkdir -p "$WORKTREES_DIR"
 if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  git -C "$ROOT" worktree add "$DIR" "$BRANCH"
-else
-  git -C "$ROOT" worktree add -b "$BRANCH" "$DIR" "$BASE_REF"
+  die "$BRANCH already exists; wt0 safe branch-resume support must land before this wrapper can reopen it"
 fi
+mkdir -p "$WORKTREES_DIR"
+"$WT0_BIN" create "$BRANCH" --path "$DIR" --base "$BASE_REF" --ephemeral >/dev/null
 
 cat >"$DIR/.builders-stack-worktree" <<EOF
 # Created by ops/dev/worktree.sh. The wrapper only removes this checkout when it
@@ -181,6 +188,8 @@ if ! (cd "$DIR" && bun install --frozen-lockfile); then
   printf 'install failed; worktree kept for inspection at %s\n' "$DIR" >&2
   exit 1
 fi
+
+"$WT0_BIN" doctor "$DIR" >/dev/null
 
 if ! find "$DIR/node_modules/.bun" -mindepth 1 -maxdepth 1 -type l -print -quit 2>/dev/null | grep -q .; then
   die 'Bun did not create global-store links; do not continue with a full per-worktree node_modules copy'
