@@ -27,7 +27,7 @@ if (/"typescript-7"/.test(read("package.json"))) {
   );
 }
 requireText(".tool-versions", /^bun 1\.3\.14$/m, "match the Bun packageManager pin");
-requireText(".wt0-version", /^0\.1\.5$/m, "pin the measured Worktree Zero release");
+requireText(".wt0-version", /^0\.1\.7$/m, "pin the measured Worktree Zero release");
 requireText("bunfig.toml", /^linker = "isolated"$/m, "use Bun's isolated linker");
 requireText("bunfig.toml", /^globalStore = true$/m, "enable Bun's global virtual store");
 requireText(".github/workflows/ci.yml", /bun-version: 1\.3\.14/, "run the pinned Bun in CI");
