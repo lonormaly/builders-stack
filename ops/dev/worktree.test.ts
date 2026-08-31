@@ -64,6 +64,36 @@ exit 64
 `,
   );
   chmodSync(join(fakeBin, "bun"), 0o755);
+  writeFileSync(
+    join(fakeBin, "wt0"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+case "\${1:-}" in
+  --help) exit 0 ;;
+  create)
+    branch="$2"; shift 2; target=""; base="HEAD"
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --path) target="$2"; shift 2 ;;
+        --base) base="$2"; shift 2 ;;
+        --ephemeral) shift ;;
+        *) exit 64 ;;
+      esac
+    done
+    git worktree add -b "$branch" "$target" "$base" >/dev/null
+    ;;
+  doctor) exit 0 ;;
+  remove)
+    branch="$2"
+    target="$(git worktree list --porcelain | awk -v wanted="refs/heads/$branch" '$1 == "worktree" { path = substr($0, 10) } $1 == "branch" && $2 == wanted { print path; exit }')"
+    git worktree remove "$target"
+    ;;
+  prune) git worktree prune ;;
+  *) exit 64 ;;
+esac
+`,
+  );
+  chmodSync(join(fakeBin, "wt0"), 0o755);
 
   git(fixture, "init", "--bare", remote);
   git(fixture, "init", "-b", "main", repo);

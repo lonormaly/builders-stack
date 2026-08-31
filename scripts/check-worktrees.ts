@@ -32,6 +32,9 @@ requireText(".github/workflows/ci.yml", /bun-version: 1\.3\.14/, "run the pinned
 requireText("AGENTS.md", /ops\/dev\/worktree\.sh <branch>/, "require the managed worktree wrapper");
 requireText("CLAUDE.md", /ops\/dev\/worktree\.sh <branch>/, "mirror the managed worktree rule");
 requireText("ops/dev/worktree.sh", /bun install --frozen-lockfile/, "install reproducibly");
+requireText("ops/dev/worktree.sh", /"\$WT0_BIN" create/, "create source through Worktree Zero");
+requireText("ops/dev/worktree.sh", /"\$WT0_BIN" doctor/, "verify runtime through Worktree Zero");
+requireText("ops/dev/worktree.sh", /"\$WT0_BIN" remove/, "remove through Worktree Zero");
 requireText(
   "ops/dev/worktree.sh",
   /git -C "\$ROOT" cherry "\$BASE_REF"/,
@@ -43,6 +46,9 @@ if ((statSync(resolve(root, "ops/dev/worktree.sh")).mode & 0o111) === 0) {
 }
 if (/worktree remove --force/.test(read("ops/dev/worktree.sh"))) {
   failures.push("ops/dev/worktree.sh: forced removal is forbidden");
+}
+if (/git -C "\$ROOT" worktree (add|remove)/.test(read("ops/dev/worktree.sh"))) {
+  failures.push("ops/dev/worktree.sh: raw Git lifecycle must stay behind Worktree Zero");
 }
 
 if (failures.length > 0) {
