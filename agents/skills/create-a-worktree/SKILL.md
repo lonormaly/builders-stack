@@ -11,7 +11,9 @@ generic source and runtime lifecycle comes from the single `wt0` binary.
 ## Create
 
 1. Preserve every existing change in the current checkout.
-2. Confirm `wt0 --help` and Bun 1.3.14 are available.
+2. Confirm `ops/dev/wt0.sh --version` reports the version pinned in
+   `.wt0-version` and Bun 1.3.14 is available. The launcher verifies the
+   release checksum before caching the binary.
 3. From the main checkout, run:
 
 ```bash
@@ -20,12 +22,17 @@ ops/dev/worktree.sh <namespaced-branch>
 
 Use the absolute path it prints. Do not call raw `git worktree`, copy the repo,
 copy `node_modules`, or share a complete mutable dependency directory.
+The wrapper requires copy-on-write source and attaches the verified Bun
+prepared environment before reporting the checkout ready.
 
 ## Work and inspect
 
 - Start the stack only through the checkout's normal project command.
-- Use `wt0 doctor <path>` when storage or dependency sharing is in doubt.
+- Use `ops/dev/wt0.sh doctor <path>` when storage or dependency sharing is in
+  doubt.
 - Keep the returned branch and path as the runtime identity for later cleanup.
+- Treat Finder and `du` as logical size only. Use the Worktree Zero physical
+  receipt when reporting actual disk allocation.
 
 ## Remove
 
