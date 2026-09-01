@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdtempSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   unlinkSync,
   writeFileSync,
@@ -14,6 +15,7 @@ import { dirname, join, resolve } from "node:path";
 
 const fixtures: string[] = [];
 const sourceRoot = resolve(import.meta.dir, "../..");
+const wt0Version = readFileSync(join(sourceRoot, ".wt0-version"), "utf8").trim();
 
 function run(cwd: string, command: string[], env: Record<string, string> = {}) {
   return Bun.spawnSync(command, {
@@ -47,7 +49,7 @@ function setupRepository() {
     join(repo, "package.json"),
     `${JSON.stringify({ name: "fixture", private: true, packageManager: "bun@1.3.14" }, null, 2)}\n`,
   );
-  writeFileSync(join(repo, ".wt0-version"), "0.1.7\n");
+  writeFileSync(join(repo, ".wt0-version"), `${wt0Version}\n`);
   writeFileSync(join(repo, "bun.lock"), '{\n  "lockfileVersion": 1\n}\n');
   writeFileSync(join(repo, "bunfig.toml"), '[install]\nlinker = "isolated"\nglobalStore = true\n');
   writeFileSync(join(repo, ".gitignore"), "node_modules/\n.builders-stack-worktree\n.env.local\n");
@@ -70,7 +72,7 @@ exit 64
     `#!/usr/bin/env bash
 set -euo pipefail
 case "\${1:-}" in
-  --version) printf 'wt0 0.1.7\n'; exit 0 ;;
+  --version) printf 'wt0 ${wt0Version}\n'; exit 0 ;;
   --help) exit 0 ;;
   create)
     branch="$2"; shift 2; target=""; base="HEAD"
