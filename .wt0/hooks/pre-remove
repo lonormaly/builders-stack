@@ -11,4 +11,13 @@ if [[ -z "${WT0_BRANCH:-}" ]]; then
   echo "refusing removal: detached checkout; attach a branch or remove it manually" >&2
   exit 1
 fi
-exec "$WT0_REPO_ROOT/ops/dev/worktree.sh" --assert-safe "$WT0_BRANCH" "$WT0_WORKTREE"
+# The worktree being removed carries its own copy of the wrapper — use that
+# one, not the main checkout's. The main checkout can legitimately be on a
+# branch that predates this tooling (or lacks it entirely), and WT0_REPO_ROOT
+# is always the main checkout's working tree, never the worktree being
+# removed. Fall back to the main checkout's copy only if this worktree
+# somehow doesn't have its own (e.g. the wrapper itself was deleted on this
+# branch).
+WORKTREE_SH="$WT0_WORKTREE/ops/dev/worktree.sh"
+[[ -x "$WORKTREE_SH" ]] || WORKTREE_SH="$WT0_REPO_ROOT/ops/dev/worktree.sh"
+exec "$WORKTREE_SH" --assert-safe "$WT0_BRANCH" "$WT0_WORKTREE"

@@ -1,0 +1,18 @@
+# Ignored, self-validating caches that wt0 copy-on-write clones from the base
+# checkout into every new worktree before anything runs in it, so the first
+# Nx/Next build starts warm. Mirrors the "Seeding" policy in
+# https://github.com/lonormaly/worktree-zero/blob/main/docs/lifecycle.md
+#
+# node_modules is deliberately NOT listed here: wt0 0.1.16 seeds it
+# automatically behind a byte-identical lockfile, gated on the base's manager
+# having no cheaper active native store. This project runs Bun's isolated
+# linker with globalStore = true (see bunfig.toml) — an active native
+# link-tree store — so that gate refuses the clone by design ("native store
+# is cheaper: bun global store") and every worktree links into the shared
+# global store instead, which already measures cheaper than a wt0 clone.
+
+.nx/cache
+
+apps/blog/.next/cache
+apps/landing/.next/cache
+apps/web/.next/cache

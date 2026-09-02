@@ -45,4 +45,10 @@ ops/dev/worktree.sh --rm <branch>
 The adapter refuses dirty source, unknown ignored files, live processes,
 unmerged patches, and unpreserved merge commits. Never force past a refusal.
 Use `ops/dev/worktree.sh --gc` to evaluate finished managed worktrees; it keeps
-anything that fails the same safety checks.
+anything that fails the same safety checks. Provenance for these checks isn't
+tied to the wrapper alone: a worktree created straight through `wt0 create` or
+`wt0 run` (bypassing this wrapper entirely) is just as safely removable — wt0's
+own fleet record proves ownership in place of the wrapper's marker file. Prefer
+`ops/dev/worktree.sh <branch>` above for the extra guardrails (Bun-version
+floor, prepared environment, worktree cap, free-disk floor), but a bare
+`wt0 create`/`wt0 run` checkout still tears down cleanly through `wt0 remove`.

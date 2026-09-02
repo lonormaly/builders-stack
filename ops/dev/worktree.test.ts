@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   unlinkSync,
   writeFileSync,
@@ -97,6 +98,13 @@ case "\${1:-}" in
     git worktree remove "$target"
     ;;
   prune) git worktree prune ;;
+  fleet)
+    if [[ -n "\${FAKE_WT0_FLEET_JSON:-}" ]]; then
+      printf '%s' "$FAKE_WT0_FLEET_JSON"
+    else
+      printf '{"runtimes":[]}'
+    fi
+    ;;
   *) exit 64 ;;
 esac
 `,
@@ -194,5 +202,103 @@ describe("managed worktree lifecycle", () => {
     });
     expect(capped.exitCode).not.toBe(0);
     expect(capped.stderr.toString()).toContain("limit 1");
+  }, 30_000);
+});
+
+describe("pre-remove hook", () => {
+  test("assert-safe runs the worktree's own wrapper copy, not the main checkout's", () => {
+    // WT0_REPO_ROOT is always the main checkout's working tree (wt0 0.1.16),
+    // which can legitimately be on a branch that predates this tooling or
+    // lacks it entirely. The worktree being removed always carries its own
+    // copy, so the hook must prefer that and fall back to WT0_REPO_ROOT only
+    // when the worktree's own copy is missing.
+    const hook = readFileSync(join(sourceRoot, ".wt0", "hooks", "pre-remove"), "utf8");
+    const worktreeCopyIndex = hook.indexOf('WORKTREE_SH="$WT0_WORKTREE/ops/dev/worktree.sh"');
+    const fallbackIndex = hook.indexOf('WORKTREE_SH="$WT0_REPO_ROOT/ops/dev/worktree.sh"');
+    expect(worktreeCopyIndex).toBeGreaterThan(-1);
+    expect(fallbackIndex).toBeGreaterThan(worktreeCopyIndex);
+    expect(hook).toContain('exec "$WORKTREE_SH" --assert-safe "$WT0_BRANCH" "$WT0_WORKTREE"');
+  });
+});
+
+describe("safe-to-remove provenance: marker or wt0 ownership", () => {
+  // The .builders-stack-worktree marker was this wrapper's only proof of
+  // provenance before wt0 had its own ownership records. Under 0.1.16 every
+  // wt0 runtime — including one created straight through `wt0 create`,
+  // bypassing this wrapper entirely — carries its own ownership (WT0_RUNTIME_ID,
+  // reported per-worktree by `wt0 fleet`), which is equally valid proof.
+
+  test("removes a wt0-owned worktree that has no wrapper marker", () => {
+    const { repo, script, env, managedRoot, fixture } = setupRepository();
+    const branch = "feat/direct-wt0-create";
+    const worktree = join(managedRoot, "feat-direct-wt0-create");
+    const runtimeId = "01a00000-0000-7000-8000-000000000001";
+
+    // Simulate a bare `wt0 create` that bypassed the wrapper: no
+    // .builders-stack-worktree marker gets written, straight off HEAD so
+    // it's already fully present in origin/main (nothing unmerged).
+    mkdirSync(managedRoot, { recursive: true });
+    const created = run(
+      repo,
+      [join(fixture, "bin", "wt0"), "create", branch, "--path", worktree, "--base", "HEAD"],
+      env,
+    );
+    expect(created.exitCode).toBe(0);
+    expect(existsSync(join(worktree, ".builders-stack-worktree"))).toBe(false);
+
+    // git worktree list reports the physical (symlink-resolved) path — e.g.
+    // /private/var/... on macOS, where TMPDIR itself sits behind a symlink —
+    // which is what the wrapper compares against, so the fleet fixture must
+    // report the same resolved form rather than the raw path we requested.
+    const fleetJson = JSON.stringify({
+      runtimes: [
+        { worktree: realpathSync(worktree), runtime_id: runtimeId, branch: `refs/heads/${branch}` },
+      ],
+    });
+    const removed = run(repo, [script, "--rm", branch], {
+      ...env,
+      WT0_RUNTIME_ID: runtimeId,
+      FAKE_WT0_FLEET_JSON: fleetJson,
+    });
+    if (removed.exitCode !== 0) {
+      throw new Error(removed.stderr.toString() || removed.stdout.toString());
+    }
+    expect(existsSync(worktree)).toBe(false);
+  }, 30_000);
+
+  test("refuses a worktree with neither the marker nor a matching wt0 fleet entry", () => {
+    const { repo, script, env, managedRoot, fixture } = setupRepository();
+    const branch = "feat/orphaned";
+    const worktree = join(managedRoot, "feat-orphaned");
+
+    mkdirSync(managedRoot, { recursive: true });
+    const created = run(
+      repo,
+      [join(fixture, "bin", "wt0"), "create", branch, "--path", worktree, "--base", "HEAD"],
+      env,
+    );
+    expect(created.exitCode).toBe(0);
+
+    // No WT0_RUNTIME_ID, no fleet entry for this path: not the wrapper's,
+    // and wt0 doesn't claim it either.
+    const refused = run(repo, [script, "--rm", branch], env);
+    expect(refused.exitCode).not.toBe(0);
+    expect(refused.stderr.toString()).toContain(
+      "was not created by this wrapper and is not a wt0-owned runtime",
+    );
+    expect(existsSync(worktree)).toBe(true);
+
+    // A WT0_RUNTIME_ID that doesn't match anything in the fleet is equally
+    // insufficient — the cross-check has to actually hold.
+    const mismatched = run(repo, [script, "--rm", branch], {
+      ...env,
+      WT0_RUNTIME_ID: "01a00000-0000-7000-8000-000000000002",
+      FAKE_WT0_FLEET_JSON: JSON.stringify({ runtimes: [] }),
+    });
+    expect(mismatched.exitCode).not.toBe(0);
+    expect(mismatched.stderr.toString()).toContain(
+      "was not created by this wrapper and is not a wt0-owned runtime",
+    );
+    expect(existsSync(worktree)).toBe(true);
   }, 30_000);
 });
