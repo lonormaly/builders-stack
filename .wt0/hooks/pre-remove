@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Runs before `wt0 remove` and `wt0 gc --apply` delete this checkout; a
+# non-zero exit vetoes the removal. It applies the same rule the wrapper
+# applies to `--rm`: every patch on the branch must already be in the base
+# ref. One implementation — the wrapper's own check — serves both paths, so
+# an unattended `wt0 gc` can never reap unmerged work.
+set -euo pipefail
+: "${WT0_WORKTREE:?}" "${WT0_REPO_ROOT:?}"
+cd /
+if [[ -z "${WT0_BRANCH:-}" ]]; then
+  echo "refusing removal: detached checkout; attach a branch or remove it manually" >&2
+  exit 1
+fi
+exec "$WT0_REPO_ROOT/ops/dev/worktree.sh" --assert-safe "$WT0_BRANCH" "$WT0_WORKTREE"

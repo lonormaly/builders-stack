@@ -81,6 +81,7 @@ case "\${1:-}" in
         --path) target="$2"; shift 2 ;;
         --base) base="$2"; shift 2 ;;
         --ephemeral | --require-cow) shift ;;
+        --owner | --require-free | --idempotency-key) shift 2 ;;
         *) exit 64 ;;
       esac
     done

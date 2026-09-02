@@ -31,6 +31,13 @@ Every agent that creates a worktree owns its cleanup:
   Preserve and finish that work instead.
 - Keep `package.json`, `.tool-versions`, CI's Bun version, and `bunfig.toml` in
   sync. Do not override the isolated linker or disable `globalStore`.
+- Every managed worktree carries an owner (`WT0_OWNER`, defaulting to the
+  ImmorTerm session or the user) and refuses to be created below the free-disk
+  floor `BUILDERS_STACK_WORKTREE_MIN_FREE` (default 10G). `.wt0-generated` is
+  the reviewed list of disposable generated paths, so `wt0 gc --ephemeral`
+  can reap finished worktrees natively; `.wt0/hooks/pre-remove` applies the
+  same patch-in-main rule to `gc` that `--rm` applies, so unmerged work is
+  never reaped.
 
 No cleanup request overrides the dirty, active, or unmerged-work checks.
 

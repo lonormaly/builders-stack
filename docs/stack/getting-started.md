@@ -23,7 +23,7 @@ Versions are pinned in [`.tool-versions`](../../.tool-versions) (read by `asdf` 
   `package.json`, `.tool-versions`, and CI. Never use npm, Yarn, or pnpm in this
   Bun workspace.
 - **Node `20+`** — **not** required to run the app (Bun is the runtime), but it's the floor for the `npx`-based MCP servers in `agents/mcp.json`. Node 20 is the minimum; older majors won't resolve those servers.
-- **Worktree Zero `0.1.7`** — pinned in [`.wt0-version`](../../.wt0-version).
+- **Worktree Zero `0.1.14`** — pinned in [`.wt0-version`](../../.wt0-version).
   `ops/dev/wt0.sh` downloads the matching macOS/Linux binary and verifies its
   SHA-256 file automatically. Start parallel agent work with
   `ops/dev/worktree.sh <branch>`; do not call raw `git worktree add`.
