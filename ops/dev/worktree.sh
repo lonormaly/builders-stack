@@ -69,6 +69,24 @@ has_live_cwd() {
     awk -v target="$target" '$0 == target || index($0, target "/") == 1 { found = 1 } END { exit !found }'
 }
 
+# True when $dir is a runtime wt0 itself owns and knows about, proven by
+# wt0's own fleet — not by anything this wrapper wrote. Covers worktrees
+# created straight through `wt0 create`/`wt0 run` (bypassing this wrapper
+# entirely), which carry no .builders-stack-worktree marker but are exactly
+# as legitimately wt0-managed as one that does. Requires WT0_RUNTIME_ID from
+# the calling hook's environment (pre-remove always sets it) and cross-checks
+# it against `wt0 fleet`'s own record for this exact path — matching the path
+# alone isn't enough, since a stale or reused directory could otherwise pass.
+is_wt0_owned() {
+  local dir="$1"
+  [[ -n "${WT0_RUNTIME_ID:-}" ]] || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  (cd "$dir" && "$WT0_BIN" fleet --json 2>/dev/null) |
+    jq -e --arg dir "$dir" --arg id "$WT0_RUNTIME_ID" \
+      '(.runtimes // []) | any(.worktree == $dir and .runtime_id == $id)' \
+      >/dev/null 2>&1
+}
+
 assert_only_generated_ignored_files() {
   local dir="$1" line path
   while IFS= read -r line; do
@@ -85,8 +103,8 @@ assert_only_generated_ignored_files() {
 
 assert_safe_to_remove() {
   local branch="$1" dir="$2" cherry_output status_output unique_merges
-  [[ -f "$dir/.builders-stack-worktree" ]] ||
-    die "$dir was not created by this wrapper; inspect it manually"
+  [[ -f "$dir/.builders-stack-worktree" ]] || is_wt0_owned "$dir" ||
+    die "$dir was not created by this wrapper and is not a wt0-owned runtime; inspect it manually"
   status_output="$(
     git -C "$dir" status --porcelain --untracked-files=all -- . \
       ':(exclude).builders-stack-worktree' ':(exclude)node_modules'
