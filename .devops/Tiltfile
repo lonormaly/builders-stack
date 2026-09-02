@@ -9,6 +9,11 @@
 # served (so no Tilt resource — except the design system's Storybook, which IS
 # served for humans).
 #
+# Two wt0 worktrees of this repo run side by side, so every portless route
+# below is named <role>-<WT0_SLUG>.stack when this runs inside a wt0 worktree
+# (WT0_SLUG set by `wt0 run`/`wt0 create` + `wt0 heartbeat`), and plain
+# <role>.stack otherwise — see stack_name()/stack_url() below.
+#
 # See docs/portless.md for the convention and the full URL table.
 
 os.putenv('PATH', os.environ['HOME'] + '/.bun/bin:' + os.environ.get('PATH', ''))
@@ -27,8 +32,17 @@ print('=' * 60)
 print('BUILDERS-STACK TILT - LOCAL (portless)')
 print('=' * 60)
 
-# All served roles share this scheme. <service>.stack.localhost:1355
-PORTLESS_PROXY = 'http://{}.stack.localhost:1355'
+# All served roles share this scheme: <service>.stack.localhost:1355, or
+# <service>-<WT0_SLUG>.stack.localhost:1355 inside a wt0 worktree, so two
+# worktrees' stacks don't fight over the same hostname.
+WT0_SLUG = os.environ.get('WT0_SLUG', '')
+SLUG_SUFFIX = ('-' + WT0_SLUG) if WT0_SLUG else ''
+
+def stack_name(role):
+    return role + SLUG_SUFFIX + '.stack'
+
+def stack_url(role):
+    return 'http://' + stack_name(role) + '.localhost:1355'
 
 # Sourced into each service so DATABASE_URL / secrets from .env.local reach the
 # process. Cross-service URLs are injected AFTER this (via portless_cmd env=), so
@@ -58,12 +72,12 @@ def portless_cmd(args, env='', health_url=''):
 local_resource(
     'api',
     serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
-        'api.stack ' + BUN + ' --filter @stack/api dev',
-        env='WEB_ORIGIN=' + PORTLESS_PROXY.format('web') +
-            ' BETTER_AUTH_URL=' + PORTLESS_PROXY.format('api') +
-            ' BETTER_AUTH_TRUSTED_ORIGINS=' + PORTLESS_PROXY.format('web'),
-        health_url=PORTLESS_PROXY.format('api') + '/health'),
-    links=[PORTLESS_PROXY.format('api') + '/health', PORTLESS_PROXY.format('api') + '/docs'],
+        stack_name('api') + ' ' + BUN + ' --filter @stack/api dev',
+        env='WEB_ORIGIN=' + stack_url('web') +
+            ' BETTER_AUTH_URL=' + stack_url('api') +
+            ' BETTER_AUTH_TRUSTED_ORIGINS=' + stack_url('web'),
+        health_url=stack_url('api') + '/health'),
+    links=[stack_url('api') + '/health', stack_url('api') + '/docs'],
     labels=['services'],
 )
 
@@ -72,9 +86,9 @@ local_resource(
 local_resource(
     'payment',
     serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
-        'payment.stack ' + BUN + ' --filter @stack/payment dev',
-        health_url=PORTLESS_PROXY.format('payment') + '/health'),
-    links=[PORTLESS_PROXY.format('payment') + '/health'],
+        stack_name('payment') + ' ' + BUN + ' --filter @stack/payment dev',
+        health_url=stack_url('payment') + '/health'),
+    links=[stack_url('payment') + '/health'],
     labels=['services'],
 )
 
@@ -94,11 +108,11 @@ local_resource(
 local_resource(
     'web',
     serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
-        'web.stack ' + BUN + ' --filter @stack/web dev',
-        env='NEXT_PUBLIC_API_URL=' + PORTLESS_PROXY.format('api') +
-            ' API_URL=' + PORTLESS_PROXY.format('api'),
-        health_url=PORTLESS_PROXY.format('web')),
-    links=[PORTLESS_PROXY.format('web')],
+        stack_name('web') + ' ' + BUN + ' --filter @stack/web dev',
+        env='NEXT_PUBLIC_API_URL=' + stack_url('api') +
+            ' API_URL=' + stack_url('api'),
+        health_url=stack_url('web')),
+    links=[stack_url('web')],
     labels=['apps'],
 )
 
@@ -107,11 +121,11 @@ local_resource(
 local_resource(
     'landing',
     serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
-        'landing.stack ' + BUN + ' --filter @stack/landing dev',
-        env='NEXT_PUBLIC_APP_URL=' + PORTLESS_PROXY.format('web') +
-            ' NEXT_PUBLIC_BLOG_URL=' + PORTLESS_PROXY.format('blog'),
-        health_url=PORTLESS_PROXY.format('landing')),
-    links=[PORTLESS_PROXY.format('landing')],
+        stack_name('landing') + ' ' + BUN + ' --filter @stack/landing dev',
+        env='NEXT_PUBLIC_APP_URL=' + stack_url('web') +
+            ' NEXT_PUBLIC_BLOG_URL=' + stack_url('blog'),
+        health_url=stack_url('landing')),
+    links=[stack_url('landing')],
     labels=['apps'],
 )
 
@@ -121,10 +135,10 @@ local_resource(
 local_resource(
     'blog',
     serve_cmd='cd ' + REPO_ROOT + ' && ' + ENV_LOCAL + portless_cmd(
-        'blog.stack ' + BUN + ' --filter @stack/blog dev',
-        env='NEXT_PUBLIC_LANDING_URL=' + PORTLESS_PROXY.format('landing'),
-        health_url=PORTLESS_PROXY.format('blog')),
-    links=[PORTLESS_PROXY.format('blog')],
+        stack_name('blog') + ' ' + BUN + ' --filter @stack/blog dev',
+        env='NEXT_PUBLIC_LANDING_URL=' + stack_url('landing'),
+        health_url=stack_url('blog')),
+    links=[stack_url('blog')],
     labels=['apps'],
 )
 
@@ -135,8 +149,8 @@ local_resource(
 # PORT is what it binds and proxies to. It falls back to a default standalone.
 local_resource(
     'storybook',
-    serve_cmd='cd ' + REPO_ROOT + ' && ' + portless_cmd('storybook.stack ' + BUN + ' --filter @stack/ui storybook'),
-    links=[PORTLESS_PROXY.format('storybook')],
+    serve_cmd='cd ' + REPO_ROOT + ' && ' + portless_cmd(stack_name('storybook') + ' ' + BUN + ' --filter @stack/ui storybook'),
+    links=[stack_url('storybook')],
     labels=['design-system'],
 )
 
@@ -165,19 +179,19 @@ local_resource(
     labels=['flows'],
 )
 
-print("""
-================================================================================
-                   BUILDERS-STACK LOCAL DEVELOPMENT (Portless)
-================================================================================
-  Web:       http://web.stack.localhost:1355
-  Landing:   http://landing.stack.localhost:1355
-  Blog:      http://blog.stack.localhost:1355
-  API:       http://api.stack.localhost:1355        (/health · /docs)
-  Payment:   http://payment.stack.localhost:1355    (/health)
-  Storybook: http://storybook.stack.localhost:1355
-  AI Worker: background load — no URL
-
-  Flows (click in the Tilt UI): db:push · deploy:staging · tunnel
-  Portless proxy: install with `npm install -g portless` (starts automatically).
-================================================================================
-""")
+print('=' * 80)
+print('                   BUILDERS-STACK LOCAL DEVELOPMENT (Portless)')
+if WT0_SLUG:
+    print('                   wt0 worktree: ' + WT0_SLUG)
+print('=' * 80)
+print('  Web:       ' + stack_url('web'))
+print('  Landing:   ' + stack_url('landing'))
+print('  Blog:      ' + stack_url('blog'))
+print('  API:       ' + stack_url('api') + '        (/health · /docs)')
+print('  Payment:   ' + stack_url('payment') + '    (/health)')
+print('  Storybook: ' + stack_url('storybook'))
+print('  AI Worker: background load — no URL')
+print('')
+print('  Flows (click in the Tilt UI): db:push · deploy:staging · tunnel')
+print('  Portless proxy: install with `npm install -g portless` (starts automatically).')
+print('=' * 80)
