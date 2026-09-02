@@ -196,3 +196,19 @@ describe("managed worktree lifecycle", () => {
     expect(capped.stderr.toString()).toContain("limit 1");
   }, 30_000);
 });
+
+describe("pre-remove hook", () => {
+  test("assert-safe runs the worktree's own wrapper copy, not the main checkout's", () => {
+    // WT0_REPO_ROOT is always the main checkout's working tree (wt0 0.1.16),
+    // which can legitimately be on a branch that predates this tooling or
+    // lacks it entirely. The worktree being removed always carries its own
+    // copy, so the hook must prefer that and fall back to WT0_REPO_ROOT only
+    // when the worktree's own copy is missing.
+    const hook = readFileSync(join(sourceRoot, ".wt0", "hooks", "pre-remove"), "utf8");
+    const worktreeCopyIndex = hook.indexOf('WORKTREE_SH="$WT0_WORKTREE/ops/dev/worktree.sh"');
+    const fallbackIndex = hook.indexOf('WORKTREE_SH="$WT0_REPO_ROOT/ops/dev/worktree.sh"');
+    expect(worktreeCopyIndex).toBeGreaterThan(-1);
+    expect(fallbackIndex).toBeGreaterThan(worktreeCopyIndex);
+    expect(hook).toContain('exec "$WORKTREE_SH" --assert-safe "$WT0_BRANCH" "$WT0_WORKTREE"');
+  });
+});
