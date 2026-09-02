@@ -11,6 +11,11 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 SCRIPT="$ROOT/ops/dev/worktree.sh"
 BASE_REF="${BUILDERS_STACK_WORKTREE_BASE:-origin/main}"
 MAX_WORKTREES="${BUILDERS_STACK_MAX_WORKTREES:-8}"
+# The floor is per machine, never a literal in the script.
+MIN_FREE="${BUILDERS_STACK_WORKTREE_MIN_FREE:-10G}"
+# Who owns the runtime: the ImmorTerm session when there is one, else the user.
+OWNER="${WT0_OWNER:-${IMMORTERM_ID:+immorterm:$IMMORTERM_ID}}"
+OWNER="${OWNER:-user:${USER:-unknown}}"
 MAIN_ROOT="$(git -C "$ROOT" worktree list --porcelain | awk '$1 == "worktree" { print substr($0, 10); exit }')"
 WORKTREES_DIR="$(dirname "$MAIN_ROOT")/$(basename "$MAIN_ROOT")-worktrees"
 WT0_BIN="${WORKTREE_ZERO_BIN:-$ROOT/ops/dev/wt0.sh}"
@@ -144,6 +149,13 @@ case "${1:-}" in
     (cd "$ROOT" && "$WT0_BIN" prune)
     exit 0
     ;;
+  --assert-safe)
+    # Used by .wt0/hooks/pre-remove so `wt0 gc --apply` applies the same
+    # patch-in-base rule as `--rm`. Not a user command.
+    [[ -n "${2:-}" && -n "${3:-}" ]] || usage
+    assert_safe_to_remove "$2" "$3"
+    exit 0
+    ;;
   --rm)
     [[ -n "${2:-}" ]] || usage
     remove_branch_worktree "$2"
@@ -173,10 +185,11 @@ fi
   die "$managed_count managed worktrees already exist (limit $MAX_WORKTREES); finish one and run $SCRIPT --gc"
 
 if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  die "$BRANCH already exists; wt0 safe branch-resume support must land before this wrapper can reopen it"
+  die "$BRANCH already exists; Worktree Zero refuses to reopen a branch without its worktree. Delete the branch or choose another name."
 fi
 mkdir -p "$WORKTREES_DIR"
-"$WT0_BIN" create "$BRANCH" --path "$DIR" --base "$BASE_REF" --require-cow --ephemeral >/dev/null
+"$WT0_BIN" create "$BRANCH" --path "$DIR" --base "$BASE_REF" --require-cow --ephemeral \
+  --owner "$OWNER" --require-free "$MIN_FREE" >/dev/null
 
 cat >"$DIR/.builders-stack-worktree" <<EOF
 # Created by ops/dev/worktree.sh. The wrapper only removes this checkout when it
