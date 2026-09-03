@@ -18,10 +18,12 @@
 
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { touchesTriggerSurface } from "../../scripts/check-changelog";
 import { nxCacheEnv } from "./nx-cache";
 
 export type FastCheck =
   | "check:agent-readability"
+  | "check:changelog"
   | "check:deployables"
   | "check:seo"
   | "check:typescript"
@@ -118,6 +120,16 @@ const gateInputs: ReadonlyArray<{
       path.endsWith("/package.json"),
   },
   {
+    // CHANGELOG.md's own diff content decides pass/fail (dependabot exemption
+    // included) — that needs the base/head range, not just a file list, so
+    // main() below special-cases this one check's invocation. `matches` here
+    // only decides whether the gate is relevant at all, same as every other
+    // gate, reusing the one trigger-surface definition scripts/check-changelog.ts
+    // itself checks against.
+    check: "check:changelog",
+    matches: (path) => path === "scripts/check-changelog.ts" || touchesTriggerSurface(path),
+  },
+  {
     check: "check:worktrees",
     matches: (path) =>
       path === "scripts/check-worktrees.ts" ||
@@ -210,7 +222,16 @@ async function main(): Promise<void> {
       "--output-style=static",
     ]);
   }
-  for (const check of plan.checks) commands.push(["bun", "run", check]);
+  for (const check of plan.checks) {
+    // check:changelog reads CHANGELOG.md's own diff (and the dependabot
+    // exemption) against this exact range — every other gate reads only the
+    // working tree, so it alone needs base/head passed through.
+    commands.push(
+      check === "check:changelog"
+        ? ["bun", "scripts/check-changelog.ts", base, head]
+        : ["bun", "run", check],
+    );
+  }
   // The planner is part of the merge gate. Its own tests are always cheap enough
   // to run and are what stop a new path from silently skipping a gate.
   commands.push(["bun", "test", "ops/ci/fast.test.ts"]);
