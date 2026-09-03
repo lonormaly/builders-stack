@@ -27,10 +27,18 @@
 // - Any future inline scripts (none in this app today) would read the
 //   nonce from the x-nonce request header via next/headers (see apps/web popup-complete).
 //
+// This proxy also carries agent-readability content negotiation (see
+// docs/stack/agent-readability.md): a request for an explicit `.md` URL, or one that
+// sends `Accept: text/markdown`, gets REWRITTEN to this app's markdown mirror instead
+// of the HTML page. The routing decision itself is a pure function in @stack/seo
+// (unit-tested there) — this just applies it before falling through to the CSP path,
+// which still runs so markdown responses get the same nonce/CSP headers as HTML.
+//
 // ponytail: this file is duplicated from apps/web (same rule as the headers() block in
 // next.config.ts — centralize only if a 4th app appears).
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { markdownRewriteTarget } from "@stack/seo";
 
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 
@@ -57,7 +65,15 @@ export function proxy(request: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const markdownTarget = markdownRewriteTarget(
+    request.nextUrl.pathname,
+    request.headers.get("accept"),
+  );
+  const response = markdownTarget
+    ? NextResponse.rewrite(new URL(markdownTarget, request.url), {
+        request: { headers: requestHeaders },
+      })
+    : NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
   return response;
 }

@@ -107,3 +107,27 @@ export function breadcrumbJsonLd(items: BreadcrumbItem[]): JsonLdData {
     })),
   };
 }
+
+export interface WebPageInput {
+  name: string;
+  url: string;
+  description: string;
+  /** ISO 8601, e.g. "2026-07-02" — the freshness signal agent-readability checks for. */
+  dateModified: string;
+}
+
+// Per the Vercel agent-readability spec (https://vercel.com/kb/guide/agent-readability-spec),
+// every page's structured data needs title + description + canonical URL + dateModified
+// (plus a BreadcrumbList — pair this with breadcrumbJsonLd()). Article pages already carry
+// dateModified via articleJsonLd(); this is the equivalent for non-article pages (home,
+// marketing, docs) so every public page — not just posts — has a freshness signal.
+export function webPageJsonLd(input: WebPageInput): JsonLdData {
+  return {
+    "@context": CONTEXT,
+    "@type": "WebPage",
+    name: input.name,
+    url: input.url,
+    description: input.description,
+    dateModified: input.dateModified,
+  };
+}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Badge,
   Button,
@@ -7,43 +8,54 @@ import {
   CardTitle,
   CardDescription,
 } from "@stack/ui";
-import { pageMetadata } from "@stack/seo";
+import { breadcrumbJsonLd, JsonLd, pageMetadata, webPageJsonLd } from "@stack/seo";
+import { FEATURES } from "./features";
+import { WebMcpTools } from "./WebMcpTools";
+import { SITE_URL } from "./seo";
+
+const DESCRIPTION =
+  "A real project structure your coding agent can navigate — apps · services · libs, a live app, a shared design system, and enforced module boundaries.";
+const LAST_UPDATED = "2026-07-02";
 
 // This page's canonical metadata — one door (@stack/seo). The layout sets the site
 // default + `%s` template; this pins the "/" canonical + OG for the home route.
+// markdownMirror: true wires <link rel="alternate" type="text/markdown"> — the mirror
+// itself is served by app/api/md/[...path]/route.ts (see docs/stack/agent-readability.md).
 export const metadata = pageMetadata({
-  description:
-    "A real project structure your coding agent can navigate — apps · services · libs, a live app, a shared design system, and enforced module boundaries.",
+  description: DESCRIPTION,
   tagline: "an AI-native monorepo starter",
   path: "/",
+  markdownMirror: true,
 });
 
+// Rich-results + agent-readability structured data: WebPage (title/description/
+// dateModified) + a breadcrumb, per the agent-readability spec's page-level check.
+// Sitewide Organization/WebSite JSON-LD already lives in layout.tsx.
+const structuredData = [
+  webPageJsonLd({
+    name: "Builder's Stack",
+    url: SITE_URL,
+    description: DESCRIPTION,
+    dateModified: LAST_UPDATED,
+  }),
+  breadcrumbJsonLd([{ name: "Builder's Stack", url: SITE_URL }]),
+];
+
 // Where "Log in / Get started" sends people: the app (apps/web). Configurable — never
-// hardcode the origin. Cross-app link, so a plain anchor (not next/link).
+// hardcode the origin. Cross-app link, so a plain anchor (not next/link). Also where
+// this app's /glossary lives — landing has no glossary of its own.
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 // The blog lives on its own subdomain in prod (blog.<yourdomain>). Env-driven so it's
 // never hardcoded; defaults to the local portless URL. Cross-app link → plain anchor.
 const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_URL ?? "http://blog.stack.localhost:1355";
 
-const FEATURES = [
-  {
-    title: "apps · services · libs",
-    body: "Three folders defined by exposure. Every role has a home, so you never restructure — you just add.",
-  },
-  {
-    title: "One design system",
-    body: "@stack/ui ships shadcn components + shared tokens. Web and native render the exact same brand.",
-  },
-  {
-    title: "Batteries, env-gated",
-    body: "Auth, payments, email, analytics — all wired, all silent no-ops until you add keys.",
-  },
-];
-
 export default function Landing() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-24 px-6 py-16">
+      <JsonLd data={structuredData} />
+      <WebMcpTools />
+
       {/* Nav */}
       <header className="flex items-center justify-between">
         <span className="font-semibold">Builder&apos;s Stack</span>
@@ -92,6 +104,24 @@ export default function Landing() {
             </Card>
           ))}
         </div>
+      </section>
+
+      {/* Agent readability */}
+      <section className="flex flex-col items-center gap-3 text-center">
+        <h2 className="text-2xl font-semibold">Built to be read by agents, not just people</h2>
+        <p className="max-w-2xl text-muted-foreground">
+          This site — and the two other apps in the template — score 90+ on Vercel&apos;s
+          agent-readability spec out of the box: markdown mirrors, content negotiation, AGENTS.md,
+          and structured data. See{" "}
+          <a href={`${APP_URL}/glossary`} className="underline underline-offset-4">
+            the glossary
+          </a>{" "}
+          for the terms, or read this page&apos;s own markdown at{" "}
+          <Link href="/index.md" className="underline underline-offset-4">
+            /index.md
+          </Link>
+          .
+        </p>
       </section>
 
       {/* CTA */}

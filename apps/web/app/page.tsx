@@ -10,17 +10,36 @@ import {
   Label,
   tokens,
 } from "@stack/ui";
-import { pageMetadata } from "@stack/seo";
+import { breadcrumbJsonLd, JsonLd, pageMetadata, webPageJsonLd } from "@stack/seo";
 import { SessionCard } from "./auth/SessionCard";
+import { SITE_URL } from "./seo";
+
+const DESCRIPTION =
+  "One design system, every surface — @stack/ui components and shared tokens rendered by both web and native, wired to a live Better Auth login.";
+const LAST_UPDATED = "2026-07-02";
 
 // This route's canonical metadata — one door (@stack/seo). Layout owns the site
 // default + `%s` template; this pins the "/" canonical + OG for the home route.
+// markdownMirror: true wires <link rel="alternate" type="text/markdown"> — the mirror
+// itself is served by app/api/md/[...path]/route.ts (see docs/stack/agent-readability.md).
 export const metadata = pageMetadata({
   title: "Design system",
-  description:
-    "One design system, every surface — @stack/ui components and shared tokens rendered by both web and native, wired to a live Better Auth login.",
+  description: DESCRIPTION,
   path: "/",
+  markdownMirror: true,
 });
+
+// Rich-results + agent-readability structured data: WebPage (title/description/
+// dateModified) + a breadcrumb, per the agent-readability spec's page-level check.
+const structuredData = [
+  webPageJsonLd({
+    name: "Design system",
+    url: SITE_URL,
+    description: DESCRIPTION,
+    dateModified: LAST_UPDATED,
+  }),
+  breadcrumbJsonLd([{ name: "Design system", url: SITE_URL }]),
+];
 
 // Proves the JS token layer is shared: these swatches are driven by @stack/ui's `tokens`
 // object — the exact same values React Native consumes (see apps/mobile).
@@ -43,6 +62,8 @@ function TokenSwatches() {
 export default function Home() {
   return (
     <div className="flex flex-col gap-12">
+      <JsonLd data={structuredData} />
+
       <section className="flex flex-col gap-3">
         <Badge>@stack/ui</Badge>
         <h1 className="text-3xl font-semibold tracking-tight">One design system, every surface.</h1>

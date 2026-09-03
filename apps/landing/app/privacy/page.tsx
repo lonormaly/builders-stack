@@ -1,21 +1,47 @@
-import { pageMetadata } from "@stack/seo";
+import { breadcrumbJsonLd, JsonLd, pageMetadata, webPageJsonLd } from "@stack/seo";
+import { SITE_URL } from "../seo";
+
+const DESCRIPTION =
+  "How this project collects, uses, and protects personal data — a starter template to adapt with your own counsel.";
 
 // TEMPLATE privacy policy — a server-rendered, indexable stub so the GDPR/consent story is
 // complete out of the box (the consent banner links here). It is NOT legal advice: replace
 // the bracketed placeholders and have counsel review before you ship. Public page, so it
-// carries metadata via @stack/seo → passes `check:seo`.
+// carries metadata via @stack/seo → passes `check:seo`. markdownMirror: true wires
+// <link rel="alternate" type="text/markdown"> — the mirror itself is served by
+// app/api/md/[...path]/route.ts (see docs/stack/agent-readability.md).
 export const metadata = pageMetadata({
   title: "Privacy Policy",
-  description:
-    "How this project collects, uses, and protects personal data — a starter template to adapt with your own counsel.",
+  description: DESCRIPTION,
   path: "/privacy",
+  markdownMirror: true,
 });
 
 const UPDATED = "1 January 2026";
+const UPDATED_ISO = "2026-01-01";
+// The flagship app, whose /glossary defines terms used across the template. Same
+// default page.tsx uses.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export default function PrivacyPage() {
+  const url = `${SITE_URL}/privacy`;
+  const structuredData = [
+    webPageJsonLd({
+      name: "Privacy Policy",
+      url,
+      description: DESCRIPTION,
+      dateModified: UPDATED_ISO,
+    }),
+    breadcrumbJsonLd([
+      { name: "Builder's Stack", url: SITE_URL },
+      { name: "Privacy Policy", url },
+    ]),
+  ];
+
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-16">
+      <JsonLd data={structuredData} />
+
       <div className="rounded-md border border-dashed bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
         <strong>Template.</strong> This is a starting point, not legal advice. Replace every
         [bracketed] value and have a lawyer review it before launch. See <code>docs/gdpr.md</code>{" "}
@@ -62,6 +88,13 @@ export default function PrivacyPage() {
         <h2 className="mt-6 text-xl font-semibold">Contact</h2>
         <p>Questions or requests: [privacy@yourdomain].</p>
       </section>
+
+      <footer className="pt-6 text-sm text-muted-foreground">
+        <a href={`${APP_URL}/glossary`} className="hover:text-foreground">
+          Glossary
+        </a>{" "}
+        — terms used across this template (e.g. env-gated batteries, module boundaries).
+      </footer>
     </main>
   );
 }

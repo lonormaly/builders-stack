@@ -25,9 +25,14 @@ export async function generateMetadata({
     title: post.title,
     description: post.description,
     path: `/${post.slug}`,
+    markdownMirror: true,
     ...(post.ogImage ? { image: post.ogImage } : {}),
   });
 }
+
+// The flagship app, whose /glossary defines terms used across this blog. Same default
+// apps/web and apps/landing use.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 // Minimal MDX → design-system element map. Keeps posts on-brand without a bespoke
 // component per post (and without pulling in @tailwindcss/typography).
@@ -139,6 +144,15 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       </header>
 
       <div>{content}</div>
+
+      <footer className="mt-16 flex items-center justify-between text-sm text-muted-foreground">
+        <Link href="/" className="hover:text-foreground">
+          ← All posts
+        </Link>
+        <a href={`${APP_URL}/glossary`} className="hover:text-foreground">
+          Glossary
+        </a>
+      </footer>
     </article>
   );
 }

@@ -31,6 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/health" className="hover:text-foreground">
                   API health
                 </Link>
+                <Link href="/glossary" className="hover:text-foreground">
+                  Glossary
+                </Link>
                 <Link href="/auth" className="hover:text-foreground">
                   Sign in
                 </Link>

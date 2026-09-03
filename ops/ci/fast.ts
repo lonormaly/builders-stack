@@ -20,7 +20,12 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { nxCacheEnv } from "./nx-cache";
 
-export type FastCheck = "check:deployables" | "check:seo" | "check:typescript" | "check:worktrees";
+export type FastCheck =
+  | "check:agent-readability"
+  | "check:deployables"
+  | "check:seo"
+  | "check:typescript"
+  | "check:worktrees";
 
 export interface FastPlan {
   boundaryFiles: string[];
@@ -85,6 +90,17 @@ const gateInputs: ReadonlyArray<{
     check: "check:seo",
     matches: (path) =>
       path === "scripts/check-seo.ts" || path.startsWith("libs/seo/") || path.startsWith("apps/"),
+  },
+  {
+    // Builds + starts every app to crawl it, so it's the priciest gate this planner
+    // runs — but the spec is about what an agent gets over HTTP, which only a build
+    // can prove. Same trigger surface as check:seo (any app or the seo lib, which
+    // owns the markdown-mirror/content-negotiation plumbing every app shares).
+    check: "check:agent-readability",
+    matches: (path) =>
+      path === "scripts/check-agent-readability.ts" ||
+      path.startsWith("libs/seo/") ||
+      path.startsWith("apps/"),
   },
   {
     check: "check:deployables",

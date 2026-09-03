@@ -19,6 +19,12 @@ export interface PageMetadataInput {
   tagline?: string;
   /** Keep the page out of the index (login/health/internal pages). */
   noIndex?: boolean;
+  /**
+   * This page has a markdown mirror (served by `app/api/md/[...path]/route.ts`, routed
+   * to by `markdownRewriteTarget()`) — emits the agent-readability spec's
+   * `<link rel="alternate" type="text/markdown">`. See docs/stack/agent-readability.md.
+   */
+  markdownMirror?: boolean;
 }
 
 export function pageMetadata(input: PageMetadataInput = {}): Metadata {
@@ -34,13 +40,17 @@ export function pageMetadata(input: PageMetadataInput = {}): Metadata {
     : { default: defaultTitle, template: `%s — ${name}` };
   const socialTitle = input.title ?? defaultTitle;
   const images = input.image ? [{ url: input.image }] : undefined;
+  const markdownPath = path === "/" ? "/index.md" : `${path}.md`;
 
   return {
     metadataBase: new URL(url),
     title,
     description: input.description,
     applicationName: name,
-    alternates: { canonical: path },
+    alternates: {
+      canonical: path,
+      ...(input.markdownMirror ? { types: { "text/markdown": markdownPath } } : {}),
+    },
     openGraph: {
       type: "website",
       url: ogUrl,

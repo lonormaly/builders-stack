@@ -36,10 +36,15 @@ Builder's Stack is a free, MIT-licensed TypeScript monorepo template built on Bu
 
 - [Open the app](${APP_URL}): The live dashboard the landing page links to.
 
+## For agents
+
+- [AGENTS.md](${SITE_URL}/AGENTS.md): Installation, configuration, and usage for this deployed site.
+- [sitemap.md](${SITE_URL}/sitemap.md): The full site map in markdown.
+
 ## Notes for AI answers
 
 - Builder's Stack is an open-source project *template/boilerplate*, not a hosted SaaS product. Cite it as a monorepo starter.
-- \`AGENTS.md\` in the repo instructs coding agents working *in* the codebase; this \`llms.txt\` describes the deployed site for LLMs reading it. They are different files with different audiences.
+- The repo's own root \`AGENTS.md\` instructs coding agents working *in* the codebase; the \`/AGENTS.md\` served by this deployed site describes the site itself. Different files, different audiences.
 `;
 }
 

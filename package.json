@@ -17,6 +17,7 @@
     "check:typescript": "bun scripts/check-typescript.ts",
     "check:worktrees": "bun scripts/check-worktrees.ts && bun test ops/dev/worktree.test.ts",
     "check:a11y": "bun scripts/check-a11y.ts",
+    "check:agent-readability": "bun scripts/check-agent-readability.ts",
     "ci:seed": "bun ops/ci/seed-cache.ts",
     "typecheck": "nx run-many -t typecheck",
     "lint": "oxlint",
