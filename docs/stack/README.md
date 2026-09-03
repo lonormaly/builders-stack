@@ -31,3 +31,4 @@ The files remain on disk; they just stop being tracked in your fork. See
 - [`agent-skills.md`](./agent-skills.md) — the "vet before you install" law for agent skills/MCPs, plus a curated, scan-gated recommended list.
 - [`ci-performance.md`](./ci-performance.md) — how CI stays in seconds: the change-class planner, the seeded Nx cache, bundle-before-Docker, and the operating rules that keep it true.
 - [`github-runners.md`](./github-runners.md) — the optional warm self-hosted runner pool: install, seeding runbook, and the traps that cost real hours.
+- [`known-issues.md`](./known-issues.md) — reproduced, worked-around rough edges (Turbopack vs. Bun's isolated linker, the wt0 pre-remove stall) and the exact condition under which each workaround can come out.

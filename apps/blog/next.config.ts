@@ -1,3 +1,4 @@
+import os from "node:os";
 import path from "node:path";
 import type { NextConfig } from "next";
 
@@ -10,6 +11,13 @@ const nextConfig: NextConfig = {
   // Pin the workspace root so Next doesn't guess it from a stray lockfile higher up
   // (which resolves a second React copy and crashes prerendering).
   outputFileTracingRoot: path.join(import.meta.dirname, "..", ".."),
+
+  // Workaround for vercel/next.js#94432 (Bun's isolated-linker global store
+  // sits outside Turbopack's project boundary) — see apps/web/next.config.ts
+  // for the full explanation and docs/stack/known-issues.md.
+  turbopack: {
+    root: os.homedir(),
+  },
 
   // Baseline security headers — see apps/web/next.config.ts for the CSP/centralization note.
   async headers() {

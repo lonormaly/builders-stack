@@ -205,6 +205,60 @@ describe("managed worktree lifecycle", () => {
   }, 30_000);
 });
 
+describe("has_live_cwd", () => {
+  test("refuses removal while a live process has its cwd inside the worktree", () => {
+    const { repo, script, env, managedRoot } = setupRepository();
+    const branch = "feat/live-cwd";
+    const worktree = join(managedRoot, "feat-live-cwd");
+
+    expect(run(repo, [script, branch], env).exitCode).toBe(0);
+
+    const liveProc = Bun.spawn(["sleep", "30"], {
+      cwd: worktree,
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    try {
+      const refused = run(repo, [script, "--rm", branch], env);
+      expect(refused.exitCode).not.toBe(0);
+      expect(refused.stderr.toString()).toContain("still has a running shell or process");
+      expect(existsSync(worktree)).toBe(true);
+    } finally {
+      liveProc.kill();
+    }
+
+    // Poll rather than a fixed sleep: the OS reaps the exited process's open
+    // fds asynchronously, so lsof can briefly still see it after kill().
+    const deadline = Date.now() + 10_000;
+    let removed = run(repo, [script, "--rm", branch], env);
+    while (removed.exitCode !== 0 && Date.now() < deadline) {
+      removed = run(repo, [script, "--rm", branch], env);
+    }
+    if (removed.exitCode !== 0) throw new Error(removed.stderr.toString());
+    expect(existsSync(worktree)).toBe(false);
+  }, 30_000);
+
+  test("fails closed — never opens — when the lsof sweep can't complete within the bound", () => {
+    const { fixture, repo, script, env, managedRoot } = setupRepository();
+    const branch = "feat/lsof-stall";
+    const worktree = join(managedRoot, "feat-lsof-stall");
+    expect(run(repo, [script, branch], env).exitCode).toBe(0);
+
+    const fakeBin = join(fixture, "bin");
+    writeFileSync(join(fakeBin, "lsof"), "#!/usr/bin/env bash\nsleep 999\n");
+    chmodSync(join(fakeBin, "lsof"), 0o755);
+
+    const stalled = run(repo, [script, "--rm", branch], {
+      ...env,
+      BUILDERS_STACK_LIVE_CHECK_TIMEOUT_SECONDS: "1",
+    });
+    expect(stalled.exitCode).not.toBe(0);
+    expect(stalled.stderr.toString()).toContain("could not prove no live process");
+    expect(stalled.stderr.toString()).toContain("within 1s");
+    expect(existsSync(worktree)).toBe(true);
+  }, 30_000);
+});
+
 describe("pre-remove hook", () => {
   test("assert-safe runs the worktree's own wrapper copy, not the main checkout's", () => {
     // WT0_REPO_ROOT is always the main checkout's working tree (wt0 0.1.16),
@@ -219,6 +273,156 @@ describe("pre-remove hook", () => {
     expect(fallbackIndex).toBeGreaterThan(worktreeCopyIndex);
     expect(hook).toContain('exec "$WORKTREE_SH" --assert-safe "$WT0_BRANCH" "$WT0_WORKTREE"');
   });
+});
+
+// Shared by the "ops/dev/wt0.sh" describe block below. Module-scoped (not
+// nested in the describe) so they aren't recreated per test.
+function cacheRootFor(home: string) {
+  return process.platform === "darwin"
+    ? join(home, "Library", "Caches", "WorktreeZero")
+    : join(home, ".cache", "worktree-zero");
+}
+
+function setupWt0Fixture(pinnedVersion: string) {
+  const fixture = mkdtempSync(join(tmpdir(), "builders-stack-wt0sh-"));
+  fixtures.push(fixture);
+  const root = join(fixture, "repo");
+  const fakeBin = join(fixture, "bin");
+  const home = join(fixture, "home");
+  mkdirSync(join(root, "ops", "dev"), { recursive: true });
+  mkdirSync(fakeBin, { recursive: true });
+  mkdirSync(home, { recursive: true });
+
+  cpSync(join(sourceRoot, "ops", "dev", "wt0.sh"), join(root, "ops", "dev", "wt0.sh"));
+  chmodSync(join(root, "ops", "dev", "wt0.sh"), 0o755);
+  writeFileSync(join(root, ".wt0-version"), `${pinnedVersion}\n`);
+
+  return {
+    root,
+    fakeBin,
+    script: join(root, "ops", "dev", "wt0.sh"),
+    cacheRoot: cacheRootFor(home),
+    baseEnv: { PATH: `${fakeBin}:${process.env.PATH ?? ""}`, HOME: home },
+  };
+}
+
+function writeFakeWt0(fakeBin: string, reportedVersion: string, marker: string) {
+  writeFileSync(
+    join(fakeBin, "wt0"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+case "\${1:-}" in
+  --version) printf 'wt0 ${reportedVersion}\\n'; exit 0 ;;
+  *) printf '${marker}:%s\\n' "$*"; exit 0 ;;
+esac
+`,
+  );
+  chmodSync(join(fakeBin, "wt0"), 0o755);
+}
+
+function writeFakeDownloadTools(fakeBin: string) {
+  // curl: satisfy `--output <path> <url>` by writing a placeholder file —
+  // enough for the fake tar below to find and "extract".
+  writeFileSync(
+    join(fakeBin, "curl"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output) out="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+[[ -n "$out" ]] && : > "$out"
+exit 0
+`,
+  );
+  chmodSync(join(fakeBin, "curl"), 0o755);
+  writeFileSync(join(fakeBin, "shasum"), "#!/usr/bin/env bash\nexit 0\n");
+  chmodSync(join(fakeBin, "shasum"), 0o755);
+}
+
+// tar: instead of extracting a real archive, install a controllable fake
+// `wt0` binary at the path wt0.sh expects next — inferring `wt0-$target`
+// from the placeholder asset's own name so this works on any host arch.
+function writeFakeTar(fakeBin: string, behavior: "fast" | "hang", reportedVersion: string) {
+  writeFileSync(
+    join(fakeBin, "tar"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+archive="$(ls wt0-*.tar.gz | head -1)"
+dir="\${archive%.tar.gz}"
+mkdir -p "$dir"
+cat > "$dir/wt0" <<'BINARY'
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "--version" ]]; then
+  ${behavior === "hang" ? "sleep 999" : `printf 'wt0 ${reportedVersion}\\n'`}
+  exit 0
+fi
+exit 64
+BINARY
+chmod +x "$dir/wt0"
+exit 0
+`,
+  );
+  chmodSync(join(fakeBin, "tar"), 0o755);
+}
+
+describe("ops/dev/wt0.sh", () => {
+  // Independent of worktree.sh's fixtures above: those bypass wt0.sh entirely
+  // via WORKTREE_ZERO_BIN. These exercise wt0.sh itself — real dependencies
+  // (bash builtins, mktemp, install, find, and the real system curl/tar where
+  // a test doesn't fake them) come from the real PATH; only `wt0` and, where
+  // noted, `curl`/`tar`/`shasum` are shadowed per test.
+
+  test("prefers a PATH wt0 that already satisfies .wt0-version, without downloading", () => {
+    const { root, fakeBin, script, cacheRoot, baseEnv } = setupWt0Fixture("0.1.16");
+    writeFakeWt0(fakeBin, "0.1.18", "path-wt0-ran");
+    // Deliberately no fake curl/tar here: if PATH-preference ever regresses
+    // and this falls through to a download, it either hits the network
+    // loudly (failing the exitCode check below) or leaves telltale output
+    // that doesn't match the PATH marker — either way this test catches it.
+
+    const result = run(root, [script, "list", "--json"], baseEnv);
+    if (result.exitCode !== 0) throw new Error(result.stderr.toString());
+    expect(result.stdout.toString()).toContain("path-wt0-ran:list --json");
+    expect(existsSync(cacheRoot)).toBe(false);
+  }, 30_000);
+
+  test("ignores a PATH wt0 older than .wt0-version and downloads the pinned version", () => {
+    const { root, fakeBin, script, cacheRoot, baseEnv } = setupWt0Fixture("0.1.16");
+    writeFakeWt0(fakeBin, "0.1.10", "path-wt0-ran");
+    writeFakeDownloadTools(fakeBin);
+    writeFakeTar(fakeBin, "fast", "0.1.16");
+
+    const result = run(root, [script, "--version"], baseEnv);
+    if (result.exitCode !== 0)
+      throw new Error(result.stderr.toString() || result.stdout.toString());
+    expect(result.stdout.toString().trim()).toBe("wt0 0.1.16");
+    expect(result.stdout.toString()).not.toContain("path-wt0-ran");
+
+    const leftoverTmp = run(root, ["find", cacheRoot, "-name", "*.tmp"], baseEnv);
+    expect(leftoverTmp.stdout.toString().trim()).toBe("");
+  }, 30_000);
+
+  test("bounds a hung fresh download's version check and leaves no tmp file", () => {
+    const { root, fakeBin, script, cacheRoot, baseEnv } = setupWt0Fixture("0.1.16");
+    writeFakeWt0(fakeBin, "0.1.10", "path-wt0-ran"); // too old: forces a download
+    writeFakeDownloadTools(fakeBin);
+    writeFakeTar(fakeBin, "hang", "0.1.16"); // the "downloaded" binary hangs on --version
+
+    const result = run(root, [script, "--version"], {
+      ...baseEnv,
+      WT0_VERSION_CHECK_TIMEOUT_SECONDS: "1",
+    });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain("did not report its version within 1s");
+    expect(result.stderr.toString()).toContain("Homebrew/npm");
+
+    const leftoverTmp = run(root, ["find", cacheRoot, "-name", "*.tmp"], baseEnv);
+    expect(leftoverTmp.stdout.toString().trim()).toBe("");
+  }, 30_000);
 });
 
 describe("safe-to-remove provenance: marker or wt0 ownership", () => {
@@ -260,6 +464,58 @@ describe("safe-to-remove provenance: marker or wt0 ownership", () => {
       WT0_RUNTIME_ID: runtimeId,
       FAKE_WT0_FLEET_JSON: fleetJson,
     });
+    if (removed.exitCode !== 0) {
+      throw new Error(removed.stderr.toString() || removed.stdout.toString());
+    }
+    expect(existsSync(worktree)).toBe(false);
+  }, 30_000);
+
+  test("prefers wt0 list --json's runtime_id over fleet --json once a wt0 release reports it", () => {
+    // lonormaly/worktree-zero D20 adds `runtime_id` to `wt0 list --json` (far
+    // cheaper than `fleet --json`, which computes dirty/merged/live/size for
+    // every worktree). is_wt0_owned detects support by key presence, not
+    // version number, so this proves the fast path activates automatically —
+    // the fake `fleet` case below fails loudly if it's ever reached.
+    const { repo, script, env, managedRoot, fixture } = setupRepository();
+    const branch = "feat/list-runtime-id";
+    const worktree = join(managedRoot, "feat-list-runtime-id");
+    const runtimeId = "01a00000-0000-7000-8000-000000000003";
+
+    mkdirSync(managedRoot, { recursive: true });
+    const created = run(
+      repo,
+      [join(fixture, "bin", "wt0"), "create", branch, "--path", worktree, "--base", "HEAD"],
+      env,
+    );
+    expect(created.exitCode).toBe(0);
+
+    const listJson = JSON.stringify({
+      schema_version: 1,
+      worktrees: [
+        { worktree: realpathSync(worktree), branch: `refs/heads/${branch}`, runtime_id: runtimeId },
+      ],
+    });
+    writeFileSync(
+      join(fixture, "bin", "wt0"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+case "\${1:-}" in
+  --version) printf 'wt0 ${wt0Version}\n'; exit 0 ;;
+  --help) exit 0 ;;
+  remove) target="$2"; git worktree remove "$target" ;;
+  prune) git worktree prune ;;
+  list) printf '%s' '${listJson}' ;;
+  fleet)
+    echo "fleet --json must not run once list --json already reports runtime_id" >&2
+    exit 1
+    ;;
+  *) exit 64 ;;
+esac
+`,
+    );
+    chmodSync(join(fixture, "bin", "wt0"), 0o755);
+
+    const removed = run(repo, [script, "--rm", branch], { ...env, WT0_RUNTIME_ID: runtimeId });
     if (removed.exitCode !== 0) {
       throw new Error(removed.stderr.toString() || removed.stdout.toString());
     }

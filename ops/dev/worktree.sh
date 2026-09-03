@@ -65,23 +65,69 @@ managed_path_for_branch() {
 has_live_cwd() {
   local target="$1"
   command -v lsof >/dev/null 2>&1 || die 'lsof is required to prove a worktree has no live process'
-  lsof -n -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' |
+  # `wt0 fleet --json`'s `live` field looked like the natural fast path here —
+  # it's the fact wt0 already computes per-runtime — but measured against this
+  # repo's own fleet (10 registered worktrees, several concurrent agents) it
+  # took 50-60s per call versus ~0.4s for the sweep below, and a `wt0 create`/
+  # `remove` in flight elsewhere can make *any* wt0 subcommand (`--version`
+  # included) block on a lock this hook has no business waiting on. Piping
+  # liveness through wt0 would reintroduce the very stall class this hook
+  # exists to avoid, just via a different call. `-w` skips lsof's blocking
+  # advisory-lock retries (part of the original stall per builders-stack#53);
+  # the bound below is the actual safety net, and it fails closed — a timeout
+  # is "could not prove", never "must be safe".
+  command -v perl >/dev/null 2>&1 || die 'perl is required to bound the lsof sweep'
+  local seconds="${BUILDERS_STACK_LIVE_CHECK_TIMEOUT_SECONDS:-30}" out rc
+  # `&& rc=0 || rc=$?`, not a bare `out=$(...); rc=$?` — under `set -e` (active
+  # for this whole script) a failing command substitution on its own line
+  # exits the script right there, before the next line can ever capture $?.
+  out="$(perl -e 'alarm shift; exec @ARGV' "$seconds" lsof -n -w -d cwd -Fn 2>/dev/null)" && rc=0 || rc=$?
+  ((rc == 0)) || die "could not prove no live process in $target within ${seconds}s (lsof exit $rc); retry"
+  printf '%s\n' "$out" | sed -n 's/^n//p' |
     awk -v target="$target" '$0 == target || index($0, target "/") == 1 { found = 1 } END { exit !found }'
 }
 
 # True when $dir is a runtime wt0 itself owns and knows about, proven by
-# wt0's own fleet — not by anything this wrapper wrote. Covers worktrees
+# wt0's own records — not by anything this wrapper wrote. Covers worktrees
 # created straight through `wt0 create`/`wt0 run` (bypassing this wrapper
 # entirely), which carry no .builders-stack-worktree marker but are exactly
 # as legitimately wt0-managed as one that does. Requires WT0_RUNTIME_ID from
 # the calling hook's environment (pre-remove always sets it) and cross-checks
-# it against `wt0 fleet`'s own record for this exact path — matching the path
-# alone isn't enough, since a stale or reused directory could otherwise pass.
+# it against wt0's own record for this exact path — matching the path alone
+# isn't enough, since a stale or reused directory could otherwise pass.
+#
+# `wt0 fleet --json` is the only place this fact has always lived, but it's
+# expensive — measured at 50-60s in this repo's own fleet (many worktrees,
+# concurrent agents) versus ~0.15s for `wt0 list --json` — because it computes
+# dirty/merged/live/size for every worktree regardless of filters. `wt0 list
+# --json` is getting `runtime_id` per entry (lonormaly/worktree-zero D20), so
+# prefer that the moment a wt0 release actually reports it — detected here by
+# key presence, not by version number, so this picks up the fast path
+# automatically on upgrade with no change to this script. Until then, fall
+# back to `fleet --json`, bounded, so a wt0 operation in flight elsewhere
+# blocking on its own lock can't hang this check either.
 is_wt0_owned() {
   local dir="$1"
   [[ -n "${WT0_RUNTIME_ID:-}" ]] || return 1
   command -v jq >/dev/null 2>&1 || return 1
-  (cd "$dir" && "$WT0_BIN" fleet --json 2>/dev/null) |
+
+  local list_json
+  list_json="$(cd "$dir" && "$WT0_BIN" list --json 2>/dev/null)" || list_json=""
+  if [[ -n "$list_json" ]] &&
+    printf '%s' "$list_json" | jq -e 'any(.worktrees[]?; has("runtime_id"))' >/dev/null 2>&1; then
+    printf '%s' "$list_json" |
+      jq -e --arg dir "$dir" --arg id "$WT0_RUNTIME_ID" \
+        '(.worktrees // []) | any(.worktree == $dir and .runtime_id == $id)' \
+        >/dev/null 2>&1
+    return
+  fi
+
+  command -v perl >/dev/null 2>&1 || return 1
+  local seconds="${BUILDERS_STACK_WT0_OWNERSHIP_TIMEOUT_SECONDS:-5}" fleet_json rc
+  fleet_json="$(cd "$dir" && perl -e 'alarm shift; exec @ARGV' "$seconds" "$WT0_BIN" fleet --json 2>/dev/null)" &&
+    rc=0 || rc=$?
+  ((rc == 0)) || return 1
+  printf '%s' "$fleet_json" |
     jq -e --arg dir "$dir" --arg id "$WT0_RUNTIME_ID" \
       '(.runtimes // []) | any(.worktree == $dir and .runtime_id == $id)' \
       >/dev/null 2>&1
