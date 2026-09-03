@@ -30,6 +30,21 @@ describe("fast CI input planning", () => {
     expect(plan.checks).toContain("check:seo");
   });
 
+  test("an app change also runs the agent-readability gate", () => {
+    const plan = planFastChecks(["apps/blog/app/page.tsx"]);
+    expect(plan.checks).toContain("check:agent-readability");
+  });
+
+  test("a change to the shared seo lib (markdown mirrors, content negotiation) runs agent-readability", () => {
+    const plan = planFastChecks(["libs/seo/src/agent-readability.ts"]);
+    expect(plan.checks).toContain("check:agent-readability");
+  });
+
+  test("a change outside apps/ and the seo lib does not run agent-readability", () => {
+    const plan = planFastChecks(["services/api/src/index.ts"]);
+    expect(plan.checks).not.toContain("check:agent-readability");
+  });
+
   test("a new service manifest runs the registry and TypeScript gates", () => {
     const plan = planFastChecks(["services/notifier/package.json"]);
     expect(plan.checks).toEqual(expect.arrayContaining(["check:deployables", "check:typescript"]));
@@ -46,7 +61,13 @@ describe("fast CI input planning", () => {
       const plan = planFastChecks([input]);
       expect(plan.runNx).toBe(true);
       expect(new Set(plan.checks)).toEqual(
-        new Set(["check:seo", "check:deployables", "check:typescript", "check:worktrees"]),
+        new Set([
+          "check:seo",
+          "check:agent-readability",
+          "check:deployables",
+          "check:typescript",
+          "check:worktrees",
+        ]),
       );
     }
   });

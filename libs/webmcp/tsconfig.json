@@ -1,0 +1,9 @@
+{
+  "$comment": "Extends the single-source-of-truth base; jsx for the useRegisterTools() hook (mirrors libs/analytics).",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["bun", "react"]
+  },
+  "include": ["src"]
+}

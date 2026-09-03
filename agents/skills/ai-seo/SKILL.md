@@ -313,6 +313,17 @@ Add these machine-readable files to your site root:
 
 If you don't have one yet, add an `llms.txt` that gives AI systems a quick overview of what your product does, who it's for, and links to key pages (including your pricing).
 
+**Agent-readability spec (Vercel) — the checklist version of everything above**
+
+[Vercel's agent-readability spec](https://vercel.com/kb/guide/agent-readability-spec) names
+every one of these checks explicitly (llms.txt, AGENTS.md, sitemap.md, markdown mirrors +
+`Accept: text/markdown` content negotiation, JSON-LD with `dateModified` + `BreadcrumbList`,
+≥3 headings, a glossary link, fenced code with a language) and scores a site
+`round(passed/total × 100)` against them. If you're working in *this* repo (Builder's Stack),
+that's already automated end to end — `bun run check:agent-readability` crawls each app and
+enforces a ≥90 score in CI; see `docs/stack/agent-readability.md` for what it checks and how
+to fix a failure. Outside this repo, use the spec's checklist directly.
+
 **`/okf/` — Open Knowledge Format bundle (Google-backed, v0.1)**
 
 Google [introduced OKF](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing) in June 2026 — a markdown spec for representing site content as a directory of cross-linked files with YAML frontmatter, agent-readable without scraping. Built primarily for data-team catalog metadata; the site-readable-by-agents repurposing was popularized by Suganthan Mohanadasan. No confirmed AI-search ranking signal today — treat it as protocol-layer registration like early schema.org. **For the full breakdown, implementation paths (free generator, WordPress plugin, by-hand), hosting guidance, and when to skip, see [references/okf.md](references/okf.md).**

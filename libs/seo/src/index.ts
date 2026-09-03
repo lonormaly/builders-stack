@@ -8,6 +8,11 @@
 //     exist for that, not as an "AI hack".
 //   - AI crawlers get you cited in AI answers → aiCrawlerRules() welcomes them.
 //
+// Plus the Vercel agent-readability spec (https://vercel.com/kb/guide/agent-readability-spec):
+// markdown mirrors, content negotiation, and the sitemap.md/AGENTS.md text routes —
+// see agent-readability.ts. `bun run check:agent-readability` is the gate; docs at
+// docs/stack/agent-readability.md.
+//
 // Use this instead of hand-rolling Metadata/OG/canonical or inline JSON-LD. The
 // `bun run check:seo` gate fails the build if a public page lacks metadata.
 
@@ -20,6 +25,7 @@ export {
   articleJsonLd,
   faqJsonLd,
   breadcrumbJsonLd,
+  webPageJsonLd,
 } from "./json-ld";
 export type {
   JsonLdData,
@@ -28,9 +34,19 @@ export type {
   ArticleInput,
   FaqItem,
   BreadcrumbItem,
+  WebPageInput,
 } from "./json-ld";
 
 export { JsonLd } from "./json-ld-component";
 
 export { aiCrawlerRules, AI_CRAWLERS } from "./crawlers";
 export type { AiCrawlerRule } from "./crawlers";
+
+export {
+  markdownPage,
+  markdownResponse,
+  markdownRewriteTarget,
+  textFileResponse,
+  sitemapMd,
+} from "./agent-readability";
+export type { MarkdownFrontmatter, MarkdownPageInput, SitemapMdSection } from "./agent-readability";

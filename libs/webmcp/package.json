@@ -1,0 +1,30 @@
+{
+  "name": "@stack/webmcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WebMCP: declare an app's agent-callable tools once (typed, zod-validated) and register them with document.modelContext — a no-op on browsers that don't support it yet. See docs/stack/webmcp.md.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "bash ../../scripts/typecheck-native.sh --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ]
+  }
+}

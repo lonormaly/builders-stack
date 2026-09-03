@@ -7,8 +7,15 @@ import {
   articleJsonLd,
   faqJsonLd,
   breadcrumbJsonLd,
+  webPageJsonLd,
 } from "./json-ld";
 import { aiCrawlerRules, AI_CRAWLERS } from "./crawlers";
+import {
+  markdownPage,
+  markdownResponse,
+  markdownRewriteTarget,
+  sitemapMd,
+} from "./agent-readability";
 
 // With no env set, @stack/config defaults apply: name "Builder's Stack", url localhost:3000.
 const NAME = "Builder's Stack";
@@ -47,6 +54,17 @@ test("pageMetadata image → OG + twitter images", () => {
   expect((m.twitter as { images?: unknown[] }).images).toEqual([{ url: "/og.png" }]);
 });
 
+test("pageMetadata markdownMirror emits alternates.types['text/markdown']", () => {
+  const home = pageMetadata({ title: "T", path: "/", markdownMirror: true });
+  expect(home.alternates?.types).toEqual({ "text/markdown": "/index.md" });
+
+  const page = pageMetadata({ title: "T", path: "/privacy", markdownMirror: true });
+  expect(page.alternates?.types).toEqual({ "text/markdown": "/privacy.md" });
+
+  // Omitted by default — pages without a markdown mirror don't claim one.
+  expect(pageMetadata({ title: "T", path: "/health" }).alternates?.types).toBeUndefined();
+});
+
 test("organizationJsonLd / websiteJsonLd carry @context + @type", () => {
   const org = organizationJsonLd({ name: NAME, url: URL_, sameAs: ["https://x.com/a"] });
   expect(org["@context"]).toBe("https://schema.org");
@@ -83,4 +101,87 @@ test("aiCrawlerRules allows the full roster at root", () => {
   expect(rules[0]?.userAgent).toContain("GPTBot");
   expect(rules[0]?.userAgent).toContain("ClaudeBot");
   expect(rules[0]?.userAgent.length).toBe(AI_CRAWLERS.length);
+});
+
+test("webPageJsonLd carries name/url/description/dateModified", () => {
+  const wp = webPageJsonLd({
+    name: "Home",
+    url: URL_,
+    description: "d",
+    dateModified: "2026-07-02",
+  });
+  expect(wp["@type"]).toBe("WebPage");
+  expect(wp.dateModified).toBe("2026-07-02");
+});
+
+test("markdownPage emits frontmatter + body + a Sitemap section", () => {
+  const md = markdownPage({
+    title: "Privacy",
+    description: "d",
+    lastUpdated: "2026-07-02",
+    canonicalUrl: `${URL_}/privacy`,
+    sitemapUrl: `${URL_}/sitemap.md`,
+    body: "Hello world.",
+  });
+  expect(md).toContain('title: "Privacy"');
+  expect(md).toContain('last_updated: "2026-07-02"');
+  expect(md).toContain("Hello world.");
+  expect(md).toContain(`## Sitemap\n\n[Full site map](${URL_}/sitemap.md)`);
+});
+
+test("markdownPage escapes quotes in frontmatter strings", () => {
+  const md = markdownPage({
+    title: 'A "quoted" title',
+    description: "d",
+    lastUpdated: "2026-07-02",
+    canonicalUrl: URL_,
+    sitemapUrl: `${URL_}/sitemap.md`,
+    body: "x",
+  });
+  expect(md).toContain('title: "A \\"quoted\\" title"');
+});
+
+test("markdownResponse sets text/markdown content-type + canonical Link header", async () => {
+  const res = markdownResponse({
+    title: "Privacy",
+    description: "d",
+    lastUpdated: "2026-07-02",
+    canonicalUrl: `${URL_}/privacy`,
+    sitemapUrl: `${URL_}/sitemap.md`,
+    body: "Hello.",
+  });
+  expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+  expect(res.headers.get("link")).toBe(`<${URL_}/privacy>; rel="canonical"`);
+  expect(await res.text()).toContain("Hello.");
+});
+
+test("markdownRewriteTarget: explicit .md suffix rewrites to /api/md/...", () => {
+  expect(markdownRewriteTarget("/privacy.md", null)).toBe("/api/md/privacy");
+  expect(markdownRewriteTarget("/index.md", null)).toBe("/api/md/index");
+});
+
+test("markdownRewriteTarget: Accept: text/markdown negotiates the same URL", () => {
+  expect(markdownRewriteTarget("/privacy", "text/markdown")).toBe("/api/md/privacy");
+  expect(markdownRewriteTarget("/", "text/markdown, text/html;q=0.5")).toBe("/api/md/index");
+  // html preferred (or no markdown at all) → pass through.
+  expect(markdownRewriteTarget("/privacy", "text/html")).toBeNull();
+  expect(markdownRewriteTarget("/privacy", "text/markdown;q=0.3, text/html;q=0.9")).toBeNull();
+  expect(markdownRewriteTarget("/privacy", null)).toBeNull();
+});
+
+test("markdownRewriteTarget never touches API routes, assets, or existing text routes", () => {
+  expect(markdownRewriteTarget("/api/md/privacy", "text/markdown")).toBeNull();
+  expect(markdownRewriteTarget("/_next/static/chunk.js", "text/markdown")).toBeNull();
+  expect(markdownRewriteTarget("/favicon.ico", "text/markdown")).toBeNull();
+  expect(markdownRewriteTarget("/sitemap.md", "text/markdown")).toBeNull();
+  expect(markdownRewriteTarget("/llms.txt", "text/markdown")).toBeNull();
+});
+
+test("sitemapMd renders headings + links per section", () => {
+  const md = sitemapMd("Builder's Stack", [
+    { heading: "Pages", links: [{ title: "Home", url: `${URL_}/` }] },
+  ]);
+  expect(md).toContain("# Builder's Stack — Sitemap");
+  expect(md).toContain("## Pages");
+  expect(md).toContain(`- [Home](${URL_}/)`);
 });
