@@ -17,11 +17,11 @@ describe("fast CI input planning", () => {
     expect(plan.formatFiles).toEqual(["docs/stack/ci-performance.md", "README.md"]);
   });
 
-  test("a service source change uses the dependency graph and no unrelated gate", () => {
+  test("a service source change uses the dependency graph and only the changelog law", () => {
     const plan = planFastChecks(["services/api/src/index.ts"]);
     expect(plan.runNx).toBe(true);
     expect(plan.boundaryFiles).toEqual(["services/api/src/index.ts"]);
-    expect(plan.checks).toEqual([]);
+    expect(plan.checks).toEqual(["check:changelog"]);
   });
 
   test("a public page runs the SEO gate", () => {
@@ -50,10 +50,40 @@ describe("fast CI input planning", () => {
     expect(plan.checks).toEqual(expect.arrayContaining(["check:deployables", "check:typescript"]));
   });
 
-  test("the worktree tooling runs its own gate and nothing else", () => {
+  // ops/ is also changelog trigger surface (a maintainer that changes worktree
+  // tooling owes a CHANGELOG.md line, same as any other ops/ change), so this
+  // no longer runs a single gate — but nothing UNRELATED to worktrees/changelog.
+  test("the worktree tooling runs its own gate, plus the changelog law", () => {
     const plan = planFastChecks(["ops/dev/worktree.sh"]);
     expect(plan.runNx).toBe(false);
-    expect(plan.checks).toEqual(["check:worktrees"]);
+    expect(new Set(plan.checks)).toEqual(new Set(["check:worktrees", "check:changelog"]));
+  });
+
+  // RED: product code across every trigger prefix the law names, none of it
+  // CHANGELOG.md itself — planFastChecks can only decide the gate is owed, not
+  // whether an entry was actually added (that's check-changelog.test.ts's job),
+  // but every one of these paths must reach the gate at all.
+  test("RED: apps/, libs/, services/, scripts/, ops/, .wt0*, Tiltfile, and tilt_*.sh all owe the changelog law", () => {
+    for (const path of [
+      "apps/web/app/page.tsx",
+      "libs/ui/src/button.tsx",
+      "services/api/src/index.ts",
+      "scripts/check-worktrees.ts",
+      "ops/deploy/build-images.sh",
+      ".wt0-seed",
+      "Tiltfile",
+      "tilt_up.sh",
+    ]) {
+      expect(planFastChecks([path]).checks).toContain("check:changelog");
+    }
+  });
+
+  // GREEN: docs and root CI/config plumbing don't owe a changelog line — a
+  // docs-only PR is exempt (per docs/stack/changelog.md) without needing any
+  // dependabot-specific logic here, since none of these paths are in scope.
+  test("GREEN: a docs-only or CI-workflow-only change does not run the changelog law", () => {
+    const plan = planFastChecks(["docs/stack/changelog.md", ".github/workflows/ci.yml"]);
+    expect(plan.checks).not.toContain("check:changelog");
   });
 
   test("a root graph input conservatively runs every declared gate", () => {
@@ -66,6 +96,7 @@ describe("fast CI input planning", () => {
           "check:agent-readability",
           "check:deployables",
           "check:typescript",
+          "check:changelog",
           "check:worktrees",
         ]),
       );

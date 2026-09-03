@@ -112,6 +112,7 @@ These are load-bearing. Nx turns the two headline laws into **lint errors** (eve
 9. **Packages are terminal.** A `packages/*` (tag `type:package`) is a **distributable you ship** (§1) — it may depend on `libs/*` **only** (not apps, services, or other packages), and **nothing internal may import it**. The tag matrix enforces both halves: `{ type:package → [type:lib] }`, and no other bucket lists `type:package` in its allowed tags, so an app/service/lib that imports `@stack/widget` **fails `lint`**. A package is a leaf that leaves the repo — never a dependency inside it.
 10. **`ops/` is the top of the graph — nothing imports from it.** `ops/` (deploy · db · secrets · runbooks · ci) is the **operate** layer: it reaches _down_ into the code to deploy/migrate/seed/provision it, and **no `app`/`service`/`lib`/`package` may reference `ops/*`**. It isn't a workspace, so `@stack/*` resolution can't reach it and Nx has no target there — the boundary is structural, not just a rule. Secret provisioning under `ops/secrets/` points to **Ringtail** and nothing else. Brand/strategy is **not** here — that's `docs/brand/`. See `ops/README.md`.
 11. **Storybook-first UI.** Every reusable UI element is a `@stack/ui` component (bespoke ones too) — apps **compose**, never inline reusable UI or duplicate styles. A component is **incomplete** until it's in `libs/ui`, **has a Storybook story**, AND is used in an app (in the design system, in Storybook, _and_ used — all three). And **every new screen/flow ships a Storybook demo:** build its view as a presentational component driven by swappable `mock-*` state and story it, so the _whole screen_ is reviewable in Storybook with **no backend or keys** — the app page then only wires data + composes that view. (Because a `lib` can't import an `app` (law 1), storying a screen means lifting its presentational view into `libs/ui` — which is the point.) See `docs/design.md`.
+12. **A CHANGELOG entry — enforced.** A PR that touches `apps/`, `libs/`, `services/`, `scripts/`, `ops/`, `.wt0*`, `Tiltfile`, or `tilt_*.sh` must add its own bold-led line under `CHANGELOG.md`'s `## Unreleased`, in the same diff. `bun run check:changelog` (via `ops/ci/fast.ts`, so it runs in CI on every PR touching that surface) **fails the build** otherwise; `docs/`-only and dependabot PRs are exempt, and the check says so. See [`docs/stack/changelog.md`](./docs/stack/changelog.md).
 
 ### 3.1 SEO/GEO — the laws (enforced)
 
@@ -227,6 +228,7 @@ Full law + our curated, scan-gated recommended list (adapt / link-only / reject 
 - New env var is in `.env.example` (with a safe local default, no real secret) — provision real values with **Ringtail** (`ops/secrets/`), never commit them.
 - New UI component lives in `libs/ui`, has a **Storybook story**, and is used in an app; a new screen ships its **Storybook demo** (a `mock-*`-driven presentational view) — law 11.
 - Nothing new imports from `ops/*` (law 10). Operate scripts (deploy/migrate/seed/provision) live in `ops/`, and run CI locally first with `ops/ci/local-ci.sh`.
+- `CHANGELOG.md` has a new bold-led line under `## Unreleased` for any `apps/`, `libs/`, `services/`, `scripts/`, `ops/`, `.wt0*`, `Tiltfile`, or `tilt_*.sh` change — law 12, `bun run check:changelog` gates it.
 - Conventional-commit message (`feat:`, `fix:`, `docs:` …). See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## 9. Where to look next
@@ -236,3 +238,4 @@ Full law + our curated, scan-gated recommended list (adapt / link-only / reject 
 - [`agents/mcp.json`](./agents/mcp.json) — the MCP servers above.
 - [`docs/stack/architecture.md`](./docs/stack/architecture.md) — the taxonomy and the two laws, with diagrams.
 - [`docs/nx.md`](./docs/nx.md) — the task graph, caching, affected, boundaries, generators.
+- [`docs/stack/changelog.md`](./docs/stack/changelog.md) — the `CHANGELOG.md` format and the `check:changelog` law (12).

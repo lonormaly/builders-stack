@@ -11,6 +11,7 @@
     "dev": "echo 'Run ./tilt_up.sh (not tilt up) — Tilt owns dev servers, not Nx. See docs/nx.md for the Tilt-vs-Nx split.'",
     "graph": "nx graph",
     "check": "nx run-many -t typecheck lint test && bun run check:seo && bun run check:typescript && bun run check:worktrees",
+    "check:changelog": "bun scripts/check-changelog.ts",
     "check:seo": "bun scripts/check-seo.ts",
     "check:deployables": "bun scripts/check-deployables.ts",
     "check:image-size": "bun scripts/check-image-size.ts",
