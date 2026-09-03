@@ -82,12 +82,18 @@ template already used for `/llms.txt`. `textFileResponse()` and `sitemapMd()` in
 
 For each app it discovers (any `apps/*` with a `next.config.ts`):
 
-1. Builds it (`bun run build`) and starts it (`next start`) on an ephemeral port —
-   unless `AGENT_READABILITY_URL_<APP>` (e.g. `AGENT_READABILITY_URL_WEB`) points it
-   at an already-running instance, in which case it skips straight to crawling that
-   URL. `NEXT_PUBLIC_SITE_URL` is pinned to that ephemeral port **before** the build
-   runs, because canonical/sitemap/JSON-LD URLs are baked into static pages at build
-   time — building with the wrong origin would make every follow-up request 404.
+1. Builds it (`next build --webpack`) and starts it (`next start`) on an ephemeral
+   port — unless `AGENT_READABILITY_URL_<APP>` (e.g. `AGENT_READABILITY_URL_WEB`)
+   points it at an already-running instance, in which case it skips straight to
+   crawling that URL. `NEXT_PUBLIC_SITE_URL` is pinned to that ephemeral port
+   **before** the build runs, because canonical/sitemap/JSON-LD URLs are baked into
+   static pages at build time — building with the wrong origin would make every
+   follow-up request 404. `--webpack`, not the default Turbopack: under this repo's
+   `bunfig.toml` (isolated linker + a shared global store), package symlinks resolve
+   outside the workspace root Turbopack pins as its project boundary, so a Turbopack
+   build fails with "Symlink ... points out of the filesystem root" — reproduced on
+   both a local machine and a fresh GitHub Actions runner. Webpack has no such
+   boundary check.
 2. Fetches `/robots.txt`, `/sitemap.xml`, `/sitemap.md`, `/AGENTS.md`,
    `/llms.txt`/`/llms-full.txt` (the site-level checks), then every URL listed in
    `/sitemap.xml` (the page-level checks — this is what defines "public page" for
