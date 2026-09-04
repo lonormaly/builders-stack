@@ -18,6 +18,7 @@ This is a bun-workspace monorepo. Read this before writing code; it tells you wh
 - Every workspace extends the root `tsconfig.base.json`. Don't fork compiler options.
 - ORM is **Drizzle** (`libs/db`). One ORM only.
 - Payments go through the `@stack/payment` adapter interface — never call a vendor (Creem/Dodo/…) directly from an app. Swapping or adding a provider is a one-file change in `services/payment/src/provider.ts`; recipe in `docs/stack/payments.md`.
+- Any `apps/`, `libs/`, `services/`, `scripts/`, `ops/`, `.wt0*`, `Tiltfile`, or `tilt_*.sh` change gets its own bold-led line under `CHANGELOG.md`'s `## Unreleased`, in the same PR — see "CHANGELOG — enforced" below.
 
 ## How to run
 
@@ -83,5 +84,9 @@ Technical compliance ships as **gates**, not just docs:
 - **deps scanned** — `.github/dependabot.yml` (all workspace `package.json`) + `osv-scanner` CI job (bun binary-lockfile caveat → Dependabot primary; see `docs/soc2-readiness.md`).
 - **analytics consent-gated (GDPR)** — `@stack/analytics` stays dormant until the user accepts `<ConsentBanner/>` (default off). Audit trail via `securityEvent()` (`@stack/analytics/events`), wired at sign-in in `libs/auth`.
 - **source of truth:** [`docs/soc2-readiness.md`](./docs/soc2-readiness.md) (Trust Service Criteria map) + [`docs/gdpr.md`](./docs/gdpr.md) (consent/privacy/data-rights + legal checklist). A template gives readiness, not a report — say so.
+
+## CHANGELOG — enforced
+
+**This is enforced.** `bun run check:changelog` (via `ops/ci/fast.ts`, so it runs in CI on every PR touching that surface) **fails the build** if a diff touches `apps/`, `libs/`, `services/`, `scripts/`, `ops/`, `.wt0*`, `Tiltfile`, or `tilt_*.sh` without also adding a bold-led line under `CHANGELOG.md`'s `## Unreleased` in the same diff — name the change and the why, with the measured number when one exists, ending in the PR number. `docs/`-only and dependabot PRs are exempt, and the check says so rather than passing silently. Format and the release process: [`docs/stack/changelog.md`](./docs/stack/changelog.md).
 
 See `agents/` for skills, subagents, and MCP config.
