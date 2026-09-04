@@ -16,7 +16,7 @@ turbopack: {
 },
 ```
 
-widening Turbopack's boundary to the home directory — the common ancestor of both the repo and the store — so the build stays on Turbopack instead of falling back to webpack. `scripts/check-agent-readability.ts` still runs `next build --webpack` for its own separate reason (see that file's comment); the two workarounds aren't in tension, they just address the same upstream gap from different call sites.
+widening Turbopack's boundary to the home directory — the common ancestor of both the repo and the store — so the build stays on Turbopack instead of falling back to webpack. `scripts/check-agent-readability.ts` deliberately keeps the default `next build`, making CI build and start all three apps through this exact path whenever an app changes.
 
 **Remove this when:** vercel/next.js#94432 is fixed upstream, or this repo stops using Bun's isolated linker + global store (drop `linker = "isolated"` / `globalStore = true` from `bunfig.toml`, and each app gets its own uncollapsed `node_modules` instead).
 

@@ -491,23 +491,17 @@ async function withRunningApp<T>(
   const env = { ...process.env, NEXT_PUBLIC_SITE_URL: baseUrl };
 
   if (!opts.skipBuild) {
-    // --webpack, not the default Turbopack: under this repo's bunfig.toml (isolated
-    // linker + a shared global store — see bunfig.toml's own comment), package
-    // symlinks resolve to a path outside the workspace root Turbopack pins as its
-    // project boundary (`outputFileTracingRoot` in each app's next.config.ts).
-    // Turbopack refuses to follow a symlink that "points out of the filesystem
-    // root" and the build fails — reproduced identically on a local machine AND a
-    // fresh GitHub Actions runner, so this is a real incompatibility between this
-    // repo's bun install mode and Turbopack's project-root check, not an
-    // environment quirk. Webpack has no such boundary and builds every app cleanly.
-    const build = Bun.spawn(["bunx", "next", "build", "--webpack"], {
+    // Keep the default Turbopack build here. Each app's next.config.ts widens
+    // Turbopack's root to include Bun's shared global store, so this gate proves
+    // that workaround on all three apps whenever their config or content moves.
+    const build = Bun.spawn(["bunx", "next", "build"], {
       cwd: app.dir,
       env,
       stdout: "inherit",
       stderr: "inherit",
     });
     const code = await build.exited;
-    if (code !== 0) throw new Error(`${app.name}: \`next build --webpack\` failed (exit ${code})`);
+    if (code !== 0) throw new Error(`${app.name}: \`next build\` failed (exit ${code})`);
   }
 
   const server = Bun.spawn(["bunx", "next", "start", "-p", String(port)], {
