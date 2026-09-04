@@ -567,6 +567,43 @@ esac
     expect(existsSync(worktree)).toBe(false);
   }, 30_000);
 
+  test("refuses removal when both wt0 ownership probes outlive their bounds", () => {
+    const { repo, script, env, managedRoot, fixture } = setupRepository();
+    const branch = "feat/ownership-stall";
+    const worktree = join(managedRoot, "feat-ownership-stall");
+
+    mkdirSync(managedRoot, { recursive: true });
+    const created = run(
+      repo,
+      [join(fixture, "bin", "wt0"), "create", branch, "--path", worktree, "--base", "HEAD"],
+      env,
+    );
+    expect(created.exitCode).toBe(0);
+    writeFileSync(
+      join(fixture, "bin", "wt0"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+case "\${1:-}" in
+  --version) printf 'wt0 ${wt0Version}\n' ;;
+  list | fleet) sleep 999 ;;
+  *) exit 64 ;;
+esac
+`,
+    );
+    chmodSync(join(fixture, "bin", "wt0"), 0o755);
+
+    const refused = run(repo, [script, "--rm", branch], {
+      ...env,
+      WT0_RUNTIME_ID: "01a00000-0000-7000-8000-000000000004",
+      BUILDERS_STACK_WT0_OWNERSHIP_TIMEOUT_SECONDS: "1",
+    });
+    expect(refused.exitCode).not.toBe(0);
+    expect(refused.stderr.toString()).toContain(
+      "was not created by this wrapper and is not a wt0-owned runtime",
+    );
+    expect(existsSync(worktree)).toBe(true);
+  }, 30_000);
+
   test("refuses a worktree with neither the marker nor a matching wt0 fleet entry", () => {
     const { repo, script, env, managedRoot, fixture } = setupRepository();
     const branch = "feat/orphaned";

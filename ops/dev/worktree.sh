@@ -31,6 +31,42 @@ die() {
   exit 1
 }
 
+# Run a probe in a bounded process group. Killing only a shell wrapper can
+# leave a descendant holding stdout/stderr open, which makes command
+# substitution wait forever even though the wrapper itself is gone.
+run_bounded() {
+  local seconds="$1"
+  shift
+  if command -v perl >/dev/null 2>&1; then
+    perl -MPOSIX=setsid -e '
+      my $seconds = shift @ARGV;
+      my $pid = fork();
+      exit 127 unless defined $pid;
+      if ($pid == 0) {
+        setsid() >= 0 or exit 127;
+        exec @ARGV;
+        exit 127;
+      }
+      $SIG{ALRM} = sub {
+        kill "TERM", -$pid;
+        select undef, undef, undef, 0.1;
+        kill "KILL", -$pid;
+        waitpid $pid, 0;
+        exit 124;
+      };
+      alarm $seconds;
+      waitpid $pid, 0;
+      alarm 0;
+      my $status = $?;
+      exit(($status & 127) ? 128 + ($status & 127) : ($status >> 8));
+    ' "$seconds" "$@"
+  elif command -v timeout >/dev/null 2>&1; then
+    timeout "$seconds" "$@"
+  else
+    return 127
+  fi
+}
+
 slugify() {
   printf '%s' "$1" | tr '[:upper:]' '[:lower:]' |
     sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
@@ -49,8 +85,10 @@ require_supported_bun() {
 }
 
 require_worktree_zero() {
+  local seconds="${WT0_VERSION_CHECK_TIMEOUT_SECONDS:-20}" reported
   [[ -x "$WT0_BIN" ]] || die "Worktree Zero launcher is not executable: $WT0_BIN"
-  [[ "$("$WT0_BIN" --version 2>/dev/null || true)" == "wt0 $WT0_VERSION" ]] ||
+  reported="$(run_bounded "$seconds" "$WT0_BIN" --version 2>/dev/null || true)"
+  [[ "$reported" == "wt0 $WT0_VERSION" ]] ||
     die "Worktree Zero $WT0_VERSION is required"
 }
 
@@ -76,12 +114,14 @@ has_live_cwd() {
   # advisory-lock retries (part of the original stall per builders-stack#53);
   # the bound below is the actual safety net, and it fails closed — a timeout
   # is "could not prove", never "must be safe".
-  command -v perl >/dev/null 2>&1 || die 'perl is required to bound the lsof sweep'
+  if ! command -v perl >/dev/null 2>&1 && ! command -v timeout >/dev/null 2>&1; then
+    die 'perl or timeout is required to bound the lsof sweep'
+  fi
   local seconds="${BUILDERS_STACK_LIVE_CHECK_TIMEOUT_SECONDS:-30}" out rc
   # `&& rc=0 || rc=$?`, not a bare `out=$(...); rc=$?` — under `set -e` (active
   # for this whole script) a failing command substitution on its own line
   # exits the script right there, before the next line can ever capture $?.
-  out="$(perl -e 'alarm shift; exec @ARGV' "$seconds" lsof -n -w -d cwd -Fn 2>/dev/null)" && rc=0 || rc=$?
+  out="$(run_bounded "$seconds" lsof -n -w -d cwd -Fn 2>/dev/null)" && rc=0 || rc=$?
   ((rc == 0)) || die "could not prove no live process in $target within ${seconds}s (lsof exit $rc); retry"
   printf '%s\n' "$out" | sed -n 's/^n//p' |
     awk -v target="$target" '$0 == target || index($0, target "/") == 1 { found = 1 } END { exit !found }'
@@ -111,8 +151,10 @@ is_wt0_owned() {
   [[ -n "${WT0_RUNTIME_ID:-}" ]] || return 1
   command -v jq >/dev/null 2>&1 || return 1
 
-  local list_json
-  list_json="$(cd "$dir" && "$WT0_BIN" list --json 2>/dev/null)" || list_json=""
+  local seconds="${BUILDERS_STACK_WT0_OWNERSHIP_TIMEOUT_SECONDS:-5}" list_json rc
+  list_json="$(cd "$dir" && run_bounded "$seconds" "$WT0_BIN" list --json 2>/dev/null)" &&
+    rc=0 || rc=$?
+  ((rc == 0)) || list_json=""
   if [[ -n "$list_json" ]] &&
     printf '%s' "$list_json" | jq -e 'any(.worktrees[]?; has("runtime_id"))' >/dev/null 2>&1; then
     printf '%s' "$list_json" |
@@ -122,9 +164,8 @@ is_wt0_owned() {
     return
   fi
 
-  command -v perl >/dev/null 2>&1 || return 1
-  local seconds="${BUILDERS_STACK_WT0_OWNERSHIP_TIMEOUT_SECONDS:-5}" fleet_json rc
-  fleet_json="$(cd "$dir" && perl -e 'alarm shift; exec @ARGV' "$seconds" "$WT0_BIN" fleet --json 2>/dev/null)" &&
+  local fleet_json
+  fleet_json="$(cd "$dir" && run_bounded "$seconds" "$WT0_BIN" fleet --json 2>/dev/null)" &&
     rc=0 || rc=$?
   ((rc == 0)) || return 1
   printf '%s' "$fleet_json" |
