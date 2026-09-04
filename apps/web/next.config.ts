@@ -1,4 +1,3 @@
-import os from "node:os";
 import path from "node:path";
 import type { NextConfig } from "next";
 
@@ -11,21 +10,6 @@ const nextConfig: NextConfig = {
   // a stray lockfile exists higher up ($HOME), resolve a second React copy from there, and
   // crash prerendering with "Objects are not valid as a React child" (dual React).
   outputFileTracingRoot: path.join(import.meta.dirname, "..", ".."),
-
-  // Workaround for vercel/next.js#94432. This repo's bunfig.toml (`linker =
-  // "isolated"`, `globalStore = true`) installs every package once into a
-  // shared store under the home directory and symlinks each checkout to it.
-  // Turbopack's project boundary otherwise defaults to `outputFileTracingRoot`
-  // above, which sits below that store, so it refuses to follow the symlinks
-  // ("Symlink … points out of the filesystem root") and `next build` fails —
-  // reproduced identically on a local machine and a fresh GitHub Actions
-  // runner. Widening the boundary to the home directory (the common ancestor
-  // of both the repo and the store) fixes it without giving up Turbopack.
-  // Remove once vercel/next.js#94432 ships upstream, or if this repo stops
-  // using Bun's isolated linker + global store. See docs/stack/known-issues.md.
-  turbopack: {
-    root: os.homedir(),
-  },
 
   // Baseline security headers on every response. No CSP here — a real CSP needs a per-app
   // nonce + allowlist (PostHog, Clarity, Tailwind inline styles) and should be added via

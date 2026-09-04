@@ -491,17 +491,17 @@ async function withRunningApp<T>(
   const env = { ...process.env, NEXT_PUBLIC_SITE_URL: baseUrl };
 
   if (!opts.skipBuild) {
-    // Keep the default Turbopack build here. Each app's next.config.ts widens
-    // Turbopack's root to include Bun's shared global store, so this gate proves
-    // that workaround on all three apps whenever their config or content moves.
-    const build = Bun.spawn(["bunx", "next", "build"], {
+    // Use the app's canonical build script so this crawl proves the same build
+    // users and release automation run. The script currently pins webpack for
+    // Bun global-store compatibility; see docs/stack/known-issues.md.
+    const build = Bun.spawn(["bun", "run", "build"], {
       cwd: app.dir,
       env,
       stdout: "inherit",
       stderr: "inherit",
     });
     const code = await build.exited;
-    if (code !== 0) throw new Error(`${app.name}: \`next build\` failed (exit ${code})`);
+    if (code !== 0) throw new Error(`${app.name}: \`bun run build\` failed (exit ${code})`);
   }
 
   const server = Bun.spawn(["bunx", "next", "start", "-p", String(port)], {

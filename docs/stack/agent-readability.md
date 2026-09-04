@@ -82,15 +82,15 @@ template already used for `/llms.txt`. `textFileResponse()` and `sitemapMd()` in
 
 For each app it discovers (any `apps/*` with a `next.config.ts`):
 
-1. Builds it (`next build`, using the default Turbopack builder) and starts it (`next start`) on an ephemeral
+1. Builds it through the app's canonical `bun run build` script and starts it (`next start`) on an ephemeral
    port — unless `AGENT_READABILITY_URL_<APP>` (e.g. `AGENT_READABILITY_URL_WEB`)
    points it at an already-running instance, in which case it skips straight to
    crawling that URL. `NEXT_PUBLIC_SITE_URL` is pinned to that ephemeral port
    **before** the build runs, because canonical/sitemap/JSON-LD URLs are baked into
    static pages at build time — building with the wrong origin would make every
-   follow-up request 404. Each app's `next.config.ts` widens Turbopack's root to
-   include the isolated Bun linker's global store; keeping the default builder
-   here turns this gate into the regression proof for that workaround.
+   follow-up request 404. The build script currently pins webpack because
+   Turbopack rejects the isolated Bun linker's global-store symlinks; see
+   `docs/stack/known-issues.md`.
 2. Fetches `/robots.txt`, `/sitemap.xml`, `/sitemap.md`, `/AGENTS.md`,
    `/llms.txt`/`/llms-full.txt` (the site-level checks), then every URL listed in
    `/sitemap.xml` (the page-level checks — this is what defines "public page" for

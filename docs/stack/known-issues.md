@@ -6,17 +6,15 @@ Two rough edges in this template that are real, reproduced, and worked around �
 
 **What breaks:** `next build` (Turbopack, the default since Next 15) fails with `Symlink … points out of the filesystem root`, on a local machine and on a fresh GitHub Actions runner alike.
 
-**Why:** `bunfig.toml` here sets `linker = "isolated"` and `globalStore = true` (see the file's own comment) — Bun installs every package once into a shared store under the home directory (`~/.bun/install/cache/links/...`) and symlinks each checkout's `node_modules` to it, so parallel worktrees stay isolated without copying gigabytes of dependencies into each one. Turbopack's project boundary defaults to `outputFileTracingRoot` (each app's `next.config.ts` pins that to the repo root, so Next doesn't guess it from a stray lockfile higher up). The shared store sits _outside_ that boundary, and Turbopack refuses to follow a symlink that points outside its project root. Tracked upstream: [vercel/next.js#94432](https://github.com/vercel/next.js/issues/94432).
+**Why:** `bunfig.toml` here sets `linker = "isolated"` and `globalStore = true` (see the file's own comment) — Bun installs every package once into a shared store under the home directory (`~/.bun/install/cache/links/...`) and symlinks each checkout's `node_modules` to it, so parallel worktrees stay isolated without copying gigabytes of dependencies into each one. Turbopack refuses those dependency symlinks as outside its filesystem root. Setting `turbopack.root` to the home directory — the common ancestor of the checkout and store — was tried and failed with the same React and `@swc/helpers` errors on GitHub Actions; it is not a workaround. Tracked upstream: [vercel/next.js#94432](https://github.com/vercel/next.js/issues/94432).
 
-**Workaround shipped:** each app's `next.config.ts` (`apps/web`, `apps/blog`, `apps/landing`) sets:
+**Workaround shipped:** each app's canonical `build` script (`apps/web`, `apps/blog`, `apps/landing`) runs:
 
-```ts
-turbopack: {
-  root: os.homedir(),
-},
+```sh
+next build --webpack
 ```
 
-widening Turbopack's boundary to the home directory — the common ancestor of both the repo and the store — so the build stays on Turbopack instead of falling back to webpack. `scripts/check-agent-readability.ts` deliberately keeps the default `next build`, making CI build and start all three apps through this exact path whenever an app changes.
+Webpack follows the shared-store links correctly. `scripts/check-agent-readability.ts` invokes `bun run build` in each app, so the PR gate builds, starts, and crawls all three apps through this same production path.
 
 **Remove this when:** vercel/next.js#94432 is fixed upstream, or this repo stops using Bun's isolated linker + global store (drop `linker = "isolated"` / `globalStore = true` from `bunfig.toml`, and each app gets its own uncollapsed `node_modules` instead).
 

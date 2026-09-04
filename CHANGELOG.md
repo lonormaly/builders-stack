@@ -158,8 +158,8 @@ product code without adding its own line here.
 - **Worktree teardown and Next.js builds now survive the two shared-store stall
   classes seen under a parallel-agent fleet (#55).** Every `wt0 --version`
   probe is bounded and removal keeps its direct `lsof` proof fail-closed,
-  while all three web apps widen Turbopack's root to include Bun's global
-  store instead of rejecting its dependency symlinks.
+  while all three web apps pin their canonical production build to webpack
+  until Turbopack can resolve Bun global-store dependency symlinks.
 - **Release artifacts no longer fail source formatting (#39).** The
   release-proof workflow downloaded a generated deployment receipt into
   `.release-plan` and then ran repository formatting over the whole working
