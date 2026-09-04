@@ -32,3 +32,4 @@ The files remain on disk; they just stop being tracked in your fork. See
 - [`ci-performance.md`](./ci-performance.md) — how CI stays in seconds: the change-class planner, the seeded Nx cache, bundle-before-Docker, and the operating rules that keep it true.
 - [`changelog.md`](./changelog.md) — the `CHANGELOG.md` format, the `check:changelog` law, and how a release rolls `Unreleased` into a version.
 - [`github-runners.md`](./github-runners.md) — the optional warm self-hosted runner pool: install, seeding runbook, and the traps that cost real hours.
+- [`known-issues.md`](./known-issues.md) — reproduced, worked-around rough edges (Turbopack vs. Bun's isolated linker, the wt0 pre-remove stall) and the exact condition under which each workaround can come out.
