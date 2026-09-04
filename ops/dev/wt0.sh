@@ -45,7 +45,32 @@ version_check_seconds="${WT0_VERSION_CHECK_TIMEOUT_SECONDS:-20}"
 version_output() {
   local executable="$1"
   if command -v perl >/dev/null 2>&1; then
-    perl -e 'alarm shift; exec @ARGV' "$version_check_seconds" "$executable" --version 2>/dev/null
+    # Supervise a new process group rather than replacing perl with the
+    # executable. A shell wrapper can spawn a child that inherits the capture
+    # pipe; killing only the wrapper would still leave this command waiting on
+    # that child. The alarm terminates the entire group, then escalates.
+    perl -MPOSIX=setsid -e '
+      my $seconds = shift @ARGV;
+      my $pid = fork();
+      exit 127 unless defined $pid;
+      if ($pid == 0) {
+        setsid() >= 0 or exit 127;
+        exec @ARGV;
+        exit 127;
+      }
+      $SIG{ALRM} = sub {
+        kill "TERM", -$pid;
+        select undef, undef, undef, 0.1;
+        kill "KILL", -$pid;
+        waitpid $pid, 0;
+        exit 124;
+      };
+      alarm $seconds;
+      waitpid $pid, 0;
+      alarm 0;
+      my $status = $?;
+      exit(($status & 127) ? 128 + ($status & 127) : ($status >> 8));
+    ' "$version_check_seconds" "$executable" --version 2>/dev/null
   elif command -v timeout >/dev/null 2>&1; then
     timeout "$version_check_seconds" "$executable" --version 2>/dev/null
   else
