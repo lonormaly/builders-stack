@@ -320,6 +320,20 @@ esac
   chmodSync(join(fakeBin, "wt0"), 0o755);
 }
 
+function writeHangingWt0(path: string) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, "#!/usr/bin/env bash\nsleep 999\n");
+  chmodSync(path, 0o755);
+}
+
+function wt0Target() {
+  if (process.platform === "darwin" && process.arch === "arm64") return "aarch64-apple-darwin";
+  if (process.platform === "darwin" && process.arch === "x64") return "x86_64-apple-darwin";
+  if (process.platform === "linux" && process.arch === "arm64") return "aarch64-unknown-linux-gnu";
+  if (process.platform === "linux" && process.arch === "x64") return "x86_64-unknown-linux-gnu";
+  throw new Error(`unsupported wt0 test host: ${process.platform}/${process.arch}`);
+}
+
 function writeFakeDownloadTools(fakeBin: string) {
   // curl: satisfy `--output <path> <url>` by writing a placeholder file —
   // enough for the fake tar below to find and "extract".
@@ -422,6 +436,37 @@ describe("ops/dev/wt0.sh", () => {
 
     const leftoverTmp = run(root, ["find", cacheRoot, "-name", "*.tmp"], baseEnv);
     expect(leftoverTmp.stdout.toString().trim()).toBe("");
+  }, 30_000);
+
+  test("bounds a hung PATH version probe before falling back to the pinned download", () => {
+    const { root, fakeBin, script, baseEnv } = setupWt0Fixture("0.1.16");
+    writeHangingWt0(join(fakeBin, "wt0"));
+    writeFakeDownloadTools(fakeBin);
+    writeFakeTar(fakeBin, "fast", "0.1.16");
+
+    const result = run(root, [script, "--version"], {
+      ...baseEnv,
+      WT0_VERSION_CHECK_TIMEOUT_SECONDS: "1",
+    });
+    if (result.exitCode !== 0)
+      throw new Error(result.stderr.toString() || result.stdout.toString());
+    expect(result.stdout.toString().trim()).toBe("wt0 0.1.16");
+  }, 30_000);
+
+  test("bounds and replaces a hung cached binary", () => {
+    const { root, fakeBin, script, cacheRoot, baseEnv } = setupWt0Fixture("0.1.16");
+    writeFakeWt0(fakeBin, "0.1.10", "old-path-wt0");
+    writeHangingWt0(join(cacheRoot, "v0.1.16", wt0Target(), "wt0"));
+    writeFakeDownloadTools(fakeBin);
+    writeFakeTar(fakeBin, "fast", "0.1.16");
+
+    const result = run(root, [script, "--version"], {
+      ...baseEnv,
+      WT0_VERSION_CHECK_TIMEOUT_SECONDS: "1",
+    });
+    if (result.exitCode !== 0)
+      throw new Error(result.stderr.toString() || result.stdout.toString());
+    expect(result.stdout.toString().trim()).toBe("wt0 0.1.16");
   }, 30_000);
 });
 

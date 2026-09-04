@@ -25,9 +25,8 @@ RELEASE_REPOSITORY="${WORKTREE_ZERO_RELEASE_REPOSITORY:-lonormaly/worktree-zero}
 # True when $1 >= $2, comparing plain X.Y.Z versions component-wise.
 version_ge() {
   local -a a b
-  local IFS=.
-  a=($1)
-  b=($2)
+  IFS=. read -r -a a <<< "$1"
+  IFS=. read -r -a b <<< "$2"
   local i ai bi
   for i in 0 1 2; do
     ai="${a[i]:-0}"
@@ -38,9 +37,26 @@ version_ge() {
   return 0
 }
 
+# Every version probe goes through the same bound. A PATH binary can be just
+# as freshly downloaded as the cached candidate, and a cached binary can be
+# left unassessed after an interrupted first launch; neither is safe to run
+# unbounded on macOS while Gatekeeper is wedged.
+version_check_seconds="${WT0_VERSION_CHECK_TIMEOUT_SECONDS:-20}"
+version_output() {
+  local executable="$1"
+  if command -v perl >/dev/null 2>&1; then
+    perl -e 'alarm shift; exec @ARGV' "$version_check_seconds" "$executable" --version 2>/dev/null
+  elif command -v timeout >/dev/null 2>&1; then
+    timeout "$version_check_seconds" "$executable" --version 2>/dev/null
+  else
+    echo "error: perl or timeout is required to bound the Worktree Zero version check" >&2
+    return 127
+  fi
+}
+
 path_wt0="$(command -v wt0 2>/dev/null || true)"
 if [[ -n "$path_wt0" ]]; then
-  path_version="$("$path_wt0" --version 2>/dev/null || true)"
+  path_version="$(version_output "$path_wt0" || true)"
   path_version="${path_version#wt0 }"
   if [[ "$path_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && version_ge "$path_version" "$VERSION"; then
     exec "$path_wt0" "$@"
@@ -83,7 +99,11 @@ trap cleanup EXIT
 # same version/target before starting a new one.
 find "$(dirname "$binary")" -maxdepth 1 -name '*.tmp' -delete 2>/dev/null || true
 
-if [[ ! -x "$binary" || "$($binary --version 2>/dev/null || true)" != "wt0 $VERSION" ]]; then
+cached_version=""
+if [[ -x "$binary" ]]; then
+  cached_version="$(version_output "$binary" || true)"
+fi
+if [[ "$cached_version" != "wt0 $VERSION" ]]; then
   command -v curl >/dev/null 2>&1 || { echo 'error: curl is required to install wt0' >&2; exit 2; }
   command -v tar >/dev/null 2>&1 || { echo 'error: tar is required to install wt0' >&2; exit 2; }
   temporary="$(mktemp -d "${TMPDIR:-/tmp}/wt0-install.XXXXXX")"
@@ -110,12 +130,7 @@ if [[ ! -x "$binary" || "$($binary --version 2>/dev/null || true)" != "wt0 $VERS
   # kills it (default disposition) if it hasn't answered in time — this is
   # exactly the hang builders-stack#53 reproduced (Gatekeeper's first-launch
   # assessment of a new ad-hoc-signed executable, stuck for 6+ minutes).
-  version_check_seconds="${WT0_VERSION_CHECK_TIMEOUT_SECONDS:-20}"
-  if command -v perl >/dev/null 2>&1; then
-    reported="$(perl -e 'alarm shift; exec @ARGV' "$version_check_seconds" "$candidate" --version 2>/dev/null || true)"
-  else
-    reported="$("$candidate" --version 2>/dev/null || true)"
-  fi
+  reported="$(version_output "$candidate" || true)"
 
   if [[ "$reported" != "wt0 $VERSION" ]]; then
     if [[ -z "$reported" ]]; then
