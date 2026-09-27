@@ -128,6 +128,10 @@ product code without adding its own line here.
 
 ### Changed
 
+- **Pinned Worktree Zero 0.1.20 for new agent worktrees.** The existing
+  checksum-verified launcher now selects the latest released runtime without
+  changing Builders Stack's worktree lifecycle or cleanup policy.
+
 - **Pinned Worktree Zero 0.1.19 and retired the obsolete unsigned-macOS
   workaround (#56).** The repository launcher now resolves to the signed and
   notarized release while retaining bounded, fail-closed probes. Builders
